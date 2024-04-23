@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -98,7 +99,7 @@ func RefreshJwt(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"token": tokenString})
 }
 
-func SignIn(c *fiber.Ctx) error {
+func LogIn(c *fiber.Ctx) error {
 	c.Set(configuration.HeaderAPIVersion, "2024-01-06")
 	err := godotenv.Load()
 	if err != nil {
@@ -140,6 +141,7 @@ func SignIn(c *fiber.Ctx) error {
 	r := hmac.New(sha256.New, key)
 	r.Write([]byte(body.Password))
 	sha := hex.EncodeToString(r.Sum(nil))
+	log.Println(base64.StdEncoding.EncodeToString(r.Sum(nil)))
 	if sha != detail["sha"] {
 		return c.Status(401).JSON(fiber.Map{"message": "用户名或密码错误"})
 	}
