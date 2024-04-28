@@ -2,13 +2,11 @@ package main
 
 import (
 	"log"
-	"os"
 	"ovaphlow/cratecyclone/configuration"
 	"ovaphlow/cratecyclone/schema"
 	"ovaphlow/cratecyclone/subscriber"
 	"ovaphlow/cratecyclone/utility"
 	"regexp"
-	"strings"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -16,7 +14,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/etag"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/recover"
-	"github.com/golang-jwt/jwt"
 )
 
 func HTTPServe(addr string) {
@@ -55,18 +52,18 @@ func HTTPServe(addr string) {
 				return c.Next()
 			}
 		}
-		auth := c.Get("Authorization")
-		auth = strings.Replace(auth, "Bearer ", "", 1)
-		token, err := jwt.Parse(auth, func(token *jwt.Token) (interface{}, error) {
-			return []byte(strings.ReplaceAll(os.Getenv("JWT_KEY"), " ", "")), nil
-		})
-		if err != nil {
-			utility.Slogger.Error(err.Error())
-			return c.Status(401).JSON(fiber.Map{"message": "用户凭证异常"})
-		}
-		if !token.Valid {
-			return c.Status(401).JSON(fiber.Map{"message": "用户凭证异常"})
-		}
+		// auth := c.Get("Authorization")
+		// auth = strings.Replace(auth, "Bearer ", "", 1)
+		// token, err := jwt.Parse(auth, func(token *jwt.Token) (interface{}, error) {
+		// 	return []byte(strings.ReplaceAll(os.Getenv("JWT_KEY"), " ", "")), nil
+		// })
+		// if err != nil {
+		// 	utility.Slogger.Error(err.Error())
+		// 	return c.Status(401).JSON(fiber.Map{"message": "用户凭证异常"})
+		// }
+		// if !token.Valid {
+		// 	return c.Status(401).JSON(fiber.Map{"message": "用户凭证异常"})
+		// }
 		return c.Next()
 	})
 
@@ -89,6 +86,11 @@ func HTTPServe(addr string) {
 	app.Post("/crate-api/:schema/:table", schema.Post)
 	app.Put("/crate-api/:schema/:table/:uuid/:id", schema.Put)
 	app.Delete("/crate-api/:schema/:table/:uuid/:id", schema.Delete)
+
+	subscriberRepo := NewSubscriberRepoImpl(utility.Postgres)
+	subscriberService := NewSubscriberService(subscriberRepo)
+	subscriberHandler := NewSubscriberHandler(subscriberService)
+	AddSubscriberEndpoints(app, subscriberHandler)
 
 	log.Fatal(app.Listen(addr))
 }
