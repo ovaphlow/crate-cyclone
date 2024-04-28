@@ -79,11 +79,8 @@ func HTTPServe(addr string) {
 	app.Post("/crate-api/subscriber/validate-token", subscriber.ValidateToken)
 	app.Get("/crate-api/subscriber/:uuid/:id", subscriber.GetWithParams)
 
-	// app.Get("/crate-api/db-schema", schema.GetSchema)
-	// app.Get("/crate-api/:schema/db-table", schema.GetTable)
-	// app.Get("/crate-api/:schema/:table", schema.Get)
 	app.Get("/crate-api/:schema/:table/:uuid/:id", schema.GetWithParams)
-	app.Post("/crate-api/:schema/:table", schema.Post)
+	// app.Post("/crate-api/:schema/:table", schema.Post)
 	app.Put("/crate-api/:schema/:table/:uuid/:id", schema.Put)
 	app.Delete("/crate-api/:schema/:table/:uuid/:id", schema.Delete)
 
