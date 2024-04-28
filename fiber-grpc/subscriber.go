@@ -84,27 +84,17 @@ func (s *SubscriberService) LogIn(userName string) (*Subscriber, error) {
 	return s.repo.RetrieveByUsername(userName)
 }
 
-type SubscriberHandler struct {
-	subscriberService *SubscriberService
-}
-
-func NewSubscriberHandler(subscriebrService *SubscriberService) *SubscriberHandler {
-	return &SubscriberHandler{subscriberService: subscriebrService}
-}
-
-func AddSubscriberEndpoints(app *fiber.App, h *SubscriberHandler) {
-	app.Get("/crate-api/subscriber1/:uuid/:id", h.GetWithParams)
-}
-
-func (h *SubscriberHandler) GetWithParams(c *fiber.Ctx) error {
-	uuid := c.Params("uuid", "")
-	id, err := strconv.ParseInt(c.Params("id", "0"), 10, 64)
-	if err != nil {
-		return c.Status(400).JSON(fiber.Map{"message": "参数错误"})
-	}
-	subscriber, err := h.subscriberService.RetrieveByID(id, uuid)
-	if err != nil {
-		return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
-	}
-	return c.Status(200).JSON(subscriber)
+func AddSubscriberEndpoints(app *fiber.App, s *SubscriberService) {
+	app.Get("/crate-api/subscriber1/:uuid/:id", func(c *fiber.Ctx) error {
+		uuid := c.Params("uuid", "")
+		id, err := strconv.ParseInt(c.Params("id", "0"), 10, 64)
+		if err != nil {
+			return c.Status(400).JSON(fiber.Map{"message": "参数错误"})
+		}
+		subscriber, err := s.RetrieveByID(id, uuid)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"message": "服务器错误"})
+		}
+		return c.Status(200).JSON(subscriber)
+	})
 }
