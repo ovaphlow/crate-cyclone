@@ -20,22 +20,22 @@ type Subscriber struct {
 }
 
 type SubscriberRepo interface {
-	RetrieveByID(id int64, uuid string) (*Subscriber, error)
-	Save(subscriber *Subscriber) error
-	RetrieveByUsername(userName string) (*Subscriber, error)
+	retrieveByID(id int64, uuid string) (*Subscriber, error)
+	save(subscriber *Subscriber) error
+	retrieveByUsername(userName string) (*Subscriber, error)
 }
 
 type SubscriberRepoImpl struct {
-	DB *sql.DB
+	db *sql.DB
 }
 
 func NewSubscriberRepoImpl(db *sql.DB) *SubscriberRepoImpl {
-	return &SubscriberRepoImpl{DB: db}
+	return &SubscriberRepoImpl{db: db}
 }
 
-func (r *SubscriberRepoImpl) RetrieveByID(id int64, uuid string) (*Subscriber, error) {
+func (r *SubscriberRepoImpl) retrieveByID(id int64, uuid string) (*Subscriber, error) {
 	subscriber := &Subscriber{}
-	err := r.DB.QueryRow("SELECT id, email, name, phone, tags, detail, time, state FROM crate.subscriber WHERE id = $1 AND state->>'uuid' = $2", id, uuid).Scan(&subscriber.ID, &subscriber.Email, &subscriber.Name, &subscriber.Phone, &subscriber.Tags, &subscriber.Detail, &subscriber.Time, &subscriber.State)
+	err := r.db.QueryRow("SELECT id, email, name, phone, tags, detail, time, state FROM crate.subscriber WHERE id = $1 AND state->>'uuid' = $2", id, uuid).Scan(&subscriber.ID, &subscriber.Email, &subscriber.Name, &subscriber.Phone, &subscriber.Tags, &subscriber.Detail, &subscriber.Time, &subscriber.State)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &Subscriber{}, nil
@@ -47,17 +47,17 @@ func (r *SubscriberRepoImpl) RetrieveByID(id int64, uuid string) (*Subscriber, e
 	return subscriber, nil
 }
 
-func (r *SubscriberRepoImpl) Save(subscriber *Subscriber) error {
-	_, err := r.DB.Exec("INSERT INTO subscriber (email, name, phone, tags, detail, time, state) VALUES (?, ?, ?, ?, ?, ?, ?)", subscriber.Email, subscriber.Name, subscriber.Phone, subscriber.Tags, subscriber.Detail, subscriber.Time, subscriber.State)
+func (r *SubscriberRepoImpl) save(subscriber *Subscriber) error {
+	_, err := r.db.Exec("INSERT INTO subscriber (email, name, phone, tags, detail, time, state) VALUES (?, ?, ?, ?, ?, ?, ?)", subscriber.Email, subscriber.Name, subscriber.Phone, subscriber.Tags, subscriber.Detail, subscriber.Time, subscriber.State)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *SubscriberRepoImpl) RetrieveByUsername(userName string) (*Subscriber, error) {
+func (r *SubscriberRepoImpl) retrieveByUsername(userName string) (*Subscriber, error) {
 	subscriber := &Subscriber{}
-	err := r.DB.QueryRow("SELECT id, email, name, phone, tags, detail, time, state FROM subscriber WHERE name = ?", userName).Scan(&subscriber.ID, &subscriber.Email, &subscriber.Name, &subscriber.Phone, &subscriber.Tags, &subscriber.Detail, &subscriber.Time, &subscriber.State)
+	err := r.db.QueryRow("SELECT id, email, name, phone, tags, detail, time, state FROM subscriber WHERE name = ?", userName).Scan(&subscriber.ID, &subscriber.Email, &subscriber.Name, &subscriber.Phone, &subscriber.Tags, &subscriber.Detail, &subscriber.Time, &subscriber.State)
 	if err != nil {
 		return nil, err
 	}
@@ -73,20 +73,20 @@ func NewSubscriberService(repo SubscriberRepo) *SubscriberService {
 }
 
 func (s *SubscriberService) RetrieveByID(id int64, uuid string) (*Subscriber, error) {
-	return s.repo.RetrieveByID(id, uuid)
+	return s.repo.retrieveByID(id, uuid)
 }
 
 func (s *SubscriberService) Save(subscriber *Subscriber) error {
-	return s.repo.Save(subscriber)
+	return s.repo.save(subscriber)
 }
 
 func (s *SubscriberService) LogIn(userName string) (*Subscriber, error) {
-	return s.repo.RetrieveByUsername(userName)
+	return s.repo.retrieveByUsername(userName)
 }
 
 func AddSubscriberEndpoints(app *fiber.App, s *SubscriberService) {
-	app.Get("/crate-api/subscriber1/:uuid/:id", func(c *fiber.Ctx) error {
-		uuid := c.Params("uuid", "")
+	app.Get("/crate-api/subscriber/:id", func(c *fiber.Ctx) error {
+		uuid := c.Query("uuid", "")
 		id, err := strconv.ParseInt(c.Params("id", "0"), 10, 64)
 		if err != nil {
 			return c.Status(400).JSON(fiber.Map{"message": "参数错误"})
