@@ -1,7 +1,5 @@
-import pg from "pg";
+import pg, { Pool } from "pg";
 import dotenv from "dotenv";
-
-const { Pool } = pg;
 
 dotenv.config();
 
@@ -60,6 +58,23 @@ export class SchemaRepository {
                     dataType: row.data_type,
                 };
             });
+        } finally {
+            client.release();
+        }
+    }
+
+    async save(schema: string, table: string, data: Record<string, unknown>) {
+        const client = await this.pool.connect();
+        try {
+            const columns = Object.keys(data).join(", ");
+            const values = Object.values(data).map((_, index) => `$${index+1}`).join(", ");
+            await client.query(
+                `
+                insert into ${schema}.${table} (${columns})
+                values (${values})
+                `,
+                [schema, table, ...Object.values(data)]
+            );
         } finally {
             client.release();
         }
