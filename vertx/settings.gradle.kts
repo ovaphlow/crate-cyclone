@@ -1,1 +1,1 @@
-rootProject.name = "cyclone"
+rootProject.name = "crate-cyclone"
