@@ -1,14 +1,13 @@
 import os
 
 from dotenv import load_dotenv
-
-from application.schema_routes import router as schema_router
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-load_dotenv()
+from application.schema_routes import router as schema_router
 
+load_dotenv()
 
 app = FastAPI()
 
@@ -39,7 +38,7 @@ async def root():
 
 app.include_router(schema_router, prefix="/crate-api", tags=["schema"])
 
-
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=os.getenv("PORT", 8421))

@@ -1,6 +1,11 @@
+import asyncio
+import json
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
-from fastapi import APIRouter, Depends, Response, Request
+from application.event import publisher, Event
 from infrastructure.postgres import SessionLocal
 from schema.repository import SchemaRepository
 from schema.service import SchemaService
@@ -16,10 +21,17 @@ def get_db():
         db.close()
 
 
+async def save_event(relation_id: int, reference_id: int, detail: str):
+    event = Event(relation_id=relation_id, reference_id=reference_id, detail=detail,
+                  time=datetime.now(timezone.utc).isoformat())
+    await publisher.dispatch(event.dict())
+
+
 @router.get("/db-schema")
-async def schemas(db: Session = Depends(get_db)):
+async def schemas(request: Request, db: Session = Depends(get_db)):
     repo = SchemaRepository(db)
     service = SchemaService(repo)
+    asyncio.ensure_future(save_event(0, 0, json.dumps(dict(ip=request.client.host))))
     return service.list_schemas()
 
 
@@ -38,7 +50,8 @@ async def columns(db: Session = Depends(get_db), schema: str = None, table: str 
 
 
 @router.post("/{schema}/{table}")
-async def save_data(request: Request, db: Session = Depends(get_db), data: dict = None, schema: str = None, table: str = None):
+async def save_data(request: Request, db: Session = Depends(get_db), data: dict = None, schema: str = None,
+                    table: str = None):
     repo = SchemaRepository(db)
     service = SchemaService(repo)
     try:
