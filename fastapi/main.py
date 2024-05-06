@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from application.schema_routes import router as schema_router
+from application.subscriber_routes import router as subscriber_router
 
 load_dotenv()
 
@@ -35,6 +36,8 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 async def root():
     return {"message": "Hello World"}
 
+
+app.include_router(subscriber_router, prefix="/crate-api/subscriber", tags=["subscriber"])
 
 app.include_router(schema_router, prefix="/crate-api", tags=["schema"])
 
