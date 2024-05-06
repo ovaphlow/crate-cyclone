@@ -8,7 +8,6 @@ import (
 type Event struct {
 	RelationID  int64
 	ReferenceID int64
-	Tags        string
 	Detail      string
 	Time        time.Time
 }

@@ -280,7 +280,6 @@ func AddSchemaEndpoints(r *gin.Engine, service *SchemaService) {
 		event := infrastruction.Event{
 			RelationID:  1,
 			ReferenceID: 1,
-			Tags:        "db-schema",
 			Detail:      fmt.Sprintf("%v", schemas),
 			Time:        time.Now(),
 		}
@@ -299,7 +298,6 @@ func AddSchemaEndpoints(r *gin.Engine, service *SchemaService) {
 		event := infrastruction.Event{
 			RelationID:  0,
 			ReferenceID: 0,
-			Tags:        "db-table",
 			Detail:      fmt.Sprintf("%v", tables),
 			Time:        time.Now(),
 		}
