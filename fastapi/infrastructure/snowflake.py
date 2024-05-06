@@ -10,8 +10,6 @@ class SnowflakeIdGenerator:
 
     @staticmethod
     def _get_timestamp():
-        print(time.time())
-        print(1288834974657)
         return int((time.time() - 1288834974.657) * 1000)
 
     def _wait_for_next_millis(self, last_timestamp):
@@ -25,7 +23,6 @@ class SnowflakeIdGenerator:
 
         if timestamp < self.last_timestamp:
             raise Exception("Clock moved backwards. Refusing to generate id.")
-            # timestamp = self._wait_for_next_millis(self.last_timestamp)
 
         if timestamp == self.last_timestamp:
             self.sequence = (self.sequence + 1) & 0xFFF
