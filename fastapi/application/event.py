@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from pydantic import BaseModel
 
@@ -49,3 +49,9 @@ class Subscriber(metaclass=Singleton):
 publisher = Publisher()
 subscriber = Subscriber("event")
 publisher.register(subscriber)
+
+
+async def save_event(relation_id: int, reference_id: int, detail: str):
+    event = Event(relation_id=relation_id, reference_id=reference_id, detail=detail,
+                  time=datetime.now(timezone.utc).isoformat())
+    await publisher.dispatch(event.dict())

@@ -1,11 +1,10 @@
 import asyncio
 import json
-from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
-from application.event import publisher, Event
+from application.event import save_event
 from infrastructure.postgres import SessionLocal
 from schema.repository import SchemaRepository
 from schema.service import SchemaService
@@ -19,12 +18,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
-
-async def save_event(relation_id: int, reference_id: int, detail: str):
-    event = Event(relation_id=relation_id, reference_id=reference_id, detail=detail,
-                  time=datetime.now(timezone.utc).isoformat())
-    await publisher.dispatch(event.dict())
 
 
 @router.get("/db-schema")
