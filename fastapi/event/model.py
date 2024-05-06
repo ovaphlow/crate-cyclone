@@ -14,4 +14,4 @@ class Event(Base):
     relation_id = Column(BigInteger)
     reference_id = Column(BigInteger)
     detail = Column(String)
-    time = Column(DateTime, default=datetime.utcnow)
+    time = Column(DateTime, default=datetime.now().isoformat())
