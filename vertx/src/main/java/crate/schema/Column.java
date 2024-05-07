@@ -1,4 +1,4 @@
-package crate.schema.model;
+package crate.schema;
 
 import lombok.Data;
 

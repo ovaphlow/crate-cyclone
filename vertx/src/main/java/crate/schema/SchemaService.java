@@ -1,6 +1,5 @@
-package crate.schema.service;
+package crate.schema;
 
-import crate.schema.repository.SchemaRepositoryImpl;
 import io.vertx.core.Future;
 
 import java.util.List;
@@ -8,9 +7,9 @@ import java.util.stream.StreamSupport;
 
 public class SchemaService {
 
-    private final SchemaRepositoryImpl repo;
+    private final SchemaRepository repo;
 
-    public SchemaService(SchemaRepositoryImpl repo) {
+    public SchemaService(SchemaRepository repo) {
         this.repo = repo;
     }
 

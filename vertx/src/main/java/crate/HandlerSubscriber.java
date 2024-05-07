@@ -2,7 +2,7 @@ package crate;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
-import crate.infrastructure.model.ErrorResponse;
+import crate.infrastructure.ErrorResponse;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -38,7 +38,7 @@ public class HandlerSubscriber {
     }
 
     public void setupRoutes(Router router) {
-        router.route().handler(MiddlewareLog::logRequestHandler);
+//        router.route().handler(Middleware::logRequestHandler);
         router.post("/crate-api/subscriber/sign-up").handler(this::signUp);
         router.post("/crate-api/subscriber/log-in").handler(this::logIn);
         router.post("/crate-api/subscriber/refresh").handler(this::refresh);
@@ -90,7 +90,7 @@ public class HandlerSubscriber {
         future.compose(rows -> {
                 Row row = rows.iterator().next();
                 if (row.getLong("qty") > 0) {
-                    JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                    JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                         .status(409)
                         .title("Conflict")
                         .detail("用户已存在")
@@ -122,7 +122,7 @@ public class HandlerSubscriber {
             })
             .onSuccess(result -> context.response().setStatusCode(201).end())
             .onFailure(err -> {
-                JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                     .status(500)
                     .title("Internal Server Error")
                     .detail(err.getMessage())
@@ -183,7 +183,7 @@ public class HandlerSubscriber {
             .execute(Tuple.of(username, username, username))
             .onSuccess(rows -> {
                 if (rows.size() == 0) {
-                    JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                    JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                         .status(404)
                         .title("Not Found")
                         .detail("用户不存在")
@@ -192,7 +192,7 @@ public class HandlerSubscriber {
                     context.response().setStatusCode(404).end(response.encode());
                     return;
                 } else if (rows.size() > 1) {
-                    JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                    JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                         .status(500)
                         .title("Internal Server Error")
                         .detail("服务器错误")
@@ -210,7 +210,7 @@ public class HandlerSubscriber {
                         JsonObject response = new JsonObject().put("token", token);
                         context.response().end(response.encode());
                     } else {
-                        JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                        JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                             .status(401)
                             .title("Unauthorized")
                             .detail("密码错误")
@@ -219,7 +219,7 @@ public class HandlerSubscriber {
                         context.response().setStatusCode(401).end(response.encode());
                     }
                 } catch (Exception e) {
-                    JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                    JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                         .status(500)
                         .title("Internal Server Error")
                         .detail(e.getMessage())
@@ -229,7 +229,7 @@ public class HandlerSubscriber {
                 }
             })
             .onFailure(err -> {
-                JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                     .type("about:blank")
                     .status(500)
                     .title("Internal Server Error")

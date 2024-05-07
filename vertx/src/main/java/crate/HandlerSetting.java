@@ -1,6 +1,6 @@
 package crate;
 
-import crate.infrastructure.model.ErrorResponse;
+import crate.infrastructure.ErrorResponse;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -27,8 +27,6 @@ public class HandlerSetting {
     }
 
     public void setupRoutes(Router router) {
-        router.route().handler(MiddlewareLog::logRequestHandler);
-        router.get("/crate-api/setting").handler(this::retrieve);
     }
 
     private void retrieve(RoutingContext context) {
@@ -59,7 +57,7 @@ public class HandlerSetting {
                     .end(response.encode());
             }).onFailure(err -> {
                 logger.error(err.getMessage());
-                JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                     .status(500)
                     .title("Internal Server Error")
                     .detail(err.getMessage())
@@ -68,7 +66,7 @@ public class HandlerSetting {
                 context.response().setStatusCode(500).end(response.encode());
             });
         } else {
-            JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+            JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                 .status(406)
                 .title("Not Acceptable")
                 .detail("参数错误")

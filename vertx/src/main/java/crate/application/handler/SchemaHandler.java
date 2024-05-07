@@ -1,8 +1,7 @@
 package crate.application.handler;
 
-import crate.MiddlewareLog;
-import crate.infrastructure.model.ErrorResponse;
-import crate.schema.service.SchemaService;
+import crate.infrastructure.ErrorResponse;
+import crate.schema.SchemaService;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
@@ -21,8 +20,6 @@ public class SchemaHandler {
     }
 
     public void setupRoutes(Router router) {
-        router.route().handler(MiddlewareLog::logRequestHandler);
-
         router.get("/crate-api/db-schema").handler(ctx -> {
             service.listSchemas()
                 .onSuccess(schemas -> {
@@ -33,7 +30,7 @@ public class SchemaHandler {
                 })
                 .onFailure(err -> {
                     logger.error("{}", err.getMessage());
-                    JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                    JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                         .type("about:blank")
                         .status(500)
                         .title("服务器错误")

@@ -2,7 +2,7 @@ package crate;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
-import crate.infrastructure.model.ErrorResponse;
+import crate.infrastructure.ErrorResponse;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
@@ -28,7 +28,7 @@ public class HandlerSchema {
     }
 
     public void setupRoutes(Router router) {
-        router.route().handler(MiddlewareLog::logRequestHandler);
+//        router.route().handler(Middleware::logRequestHandler);
 //        router.get("/crate-api/:schema/:table/:uuid/:id").handler(this::retrieve);
 //        router.put("/crate-api/:schema/:table/:uuid/:id").handler(this::update);
 //        router.delete("/crate-api/:schema/:table/:uuid/:id").handler(this::remove);
@@ -116,7 +116,7 @@ public class HandlerSchema {
                     .end(response.encode());
             })
             .onFailure(err -> {
-                JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                     .status(500)
                     .title("服务器错误")
                     .detail(err.getMessage())
@@ -145,7 +145,7 @@ public class HandlerSchema {
                     .end(response.encode());
             })
             .onFailure(err -> {
-                JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                     .status(500)
                     .title("服务器错误")
                     .detail(err.getMessage())
@@ -193,7 +193,7 @@ public class HandlerSchema {
         retrieveColumns(schema, table)
             .onSuccess(columns -> {
                 if (columns.isEmpty()) {
-                    JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                    JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                         .status(404)
                         .title("服务器错误")
                         .detail("")
@@ -203,7 +203,7 @@ public class HandlerSchema {
                     return;
                 }
                 if (!new HashSet<>(columns.stream().map(it -> it.get("column_name")).toList()).containsAll(body.fieldNames())) {
-                    JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                    JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                         .status(400)
                         .title("服务器错误")
                         .detail("")
@@ -235,7 +235,7 @@ public class HandlerSchema {
                     .onSuccess(rows -> context.response().setStatusCode(201).end())
                     .onFailure(err -> {
                         logger.error(err.getMessage());
-                        JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                        JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                             .status(500)
                             .title("服务器错误")
                             .detail(err.getMessage())
@@ -249,7 +249,7 @@ public class HandlerSchema {
             })
             .onFailure(err -> {
                 logger.error(err.getMessage());
-                JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                     .status(500)
                     .title("服务器错误")
                     .detail(err.getMessage())
@@ -269,7 +269,7 @@ public class HandlerSchema {
         retrieveColumns(context.pathParam("schema"), context.pathParam("table"))
             .onSuccess(columns -> {
                 if (columns.isEmpty()) {
-                    JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                    JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                         .status(404)
                         .title("No schema.")
                         .detail("")
@@ -287,7 +287,7 @@ public class HandlerSchema {
                     .onSuccess(rows -> {
                         Row row = rows.iterator().next();
                         if (null == row) {
-                            JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                            JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                                 .status(404)
                                 .title("No data.")
                                 .detail("")
@@ -306,7 +306,7 @@ public class HandlerSchema {
                         context.response().putHeader("content-type", "application/json").end(response.encode());
                     })
                     .onFailure(err -> {
-                        JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                        JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                             .status(500)
                             .title("服务器错误")
                             .detail(err.getMessage())
@@ -317,7 +317,7 @@ public class HandlerSchema {
             })
             .onFailure(err -> {
                 logger.error(err.getMessage());
-                JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+                JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                     .status(500)
                     .title("服务器错误")
                     .detail(err.getMessage())
@@ -364,7 +364,7 @@ public class HandlerSchema {
             logger.info(query);
             return pool.preparedQuery(query).execute(Tuple.wrap(params).addLong(id).addString(uuid));
         }).onSuccess(result -> context.response().setStatusCode(200).end()).onFailure(err -> {
-            JsonObject response = JsonObject.mapFrom(ErrorResponse.builder()
+            JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
                 .status(500)
                 .title("Internal server error.")
                 .detail(err.getMessage())

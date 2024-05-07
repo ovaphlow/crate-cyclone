@@ -1,4 +1,4 @@
-package crate.utility;
+package crate.infrastructure;
 
 import io.vertx.pgclient.PgConnectOptions;
 
@@ -6,11 +6,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Properties;
 
-public class Config {
+public class Configuration {
 
     private final Properties properties;
 
-    public Config(String envFilePath) {
+    public Configuration(String envFilePath) {
         properties = new Properties();
         try {
             FileInputStream fis = new FileInputStream(envFilePath);
