@@ -90,12 +90,7 @@ public class HandlerSubscriber {
         future.compose(rows -> {
                 Row row = rows.iterator().next();
                 if (row.getLong("qty") > 0) {
-                    JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                        .status(409)
-                        .title("Conflict")
-                        .detail("用户已存在")
-                        .instance(context.request().uri())
-                        .build());
+                    JsonObject response = JsonObject.mapFrom(new ErrorResponse(null, 409, "用户已存在", "", context.request().uri()));
                     context.response().setStatusCode(409).end(response.encode());
                     return Future.failedFuture("用户已存在");
                 }
@@ -122,55 +117,9 @@ public class HandlerSubscriber {
             })
             .onSuccess(result -> context.response().setStatusCode(201).end())
             .onFailure(err -> {
-                JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                    .status(500)
-                    .title("Internal Server Error")
-                    .detail(err.getMessage())
-                    .instance(context.request().uri())
-                    .build());
+                JsonObject response = JsonObject.mapFrom(new ErrorResponse(null, 500, "Internal Server Error", err.getMessage(), context.request().uri()));
                 context.response().setStatusCode(500).end(response.encode());
             });
-        /*
-        pool.preparedQuery("""
-                select count(*) as qty from crate.subscriber
-                where name = $1 or email = $2 or phone = $3
-                """)
-            .execute(Tuple.of(body.getString("username"), body.getString("username"), body.getString("username")))
-            .onSuccess(rows -> {
-                Row row = rows.iterator().next();
-                if (row.getLong("qty") > 0) {
-                    JsonObject response = JsonObject.mapFrom(new ErrorResponse(409, "Conflict", "用户已存在", context.request().uri()));
-                    context.response().setStatusCode(409).end(response.encode());
-                    return;
-                }
-                Long id = IdUtil.getSnowflake(1, 1).nextId();
-                String salt = IdUtil.simpleUUID();
-                String detail = "{}";
-                try {
-                    JsonObject d = new JsonObject()
-                        .put("salt", salt)
-                        .put("hash", hashPassword(body.getString("password"), salt, "hex"));
-                    detail = d.encode();
-                } catch (Exception e) {
-                    System.out.println(e.getMessage());
-                }
-                JsonObject state = new JsonObject().put("uuid", IdUtil.randomUUID()).put("created_at", DateUtil.formatDateTime(new Date()));
-                pool.preparedQuery("""
-                        insert into crate.subscriber (id, email, name, phone, tags, detail, time, state)
-                        values ($1, $2, $3, $4, $5, $6, $7, $8)
-                        """)
-                    .execute(Tuple.of(id, body.getString("email"), body.getString("email"), "", "[]", detail, new Date(), state.encode()))
-                    .onSuccess(result -> context.response().setStatusCode(201).end())
-                    .onFailure(err -> {
-                        JsonObject response = JsonObject.mapFrom(new ErrorResponse(500, "Internal Server Error", err.getMessage(), context.request().uri()));
-                        context.response().setStatusCode(500).end(response.encode());
-                    });
-            })
-            .onFailure(err -> {
-                JsonObject response = JsonObject.mapFrom(new ErrorResponse(500, "Internal Server Error", err.getMessage(), context.request().uri()));
-                context.response().setStatusCode(500).end(response.encode());
-            });
-         */
     }
 
     private void logIn(RoutingContext context) {
@@ -183,21 +132,11 @@ public class HandlerSubscriber {
             .execute(Tuple.of(username, username, username))
             .onSuccess(rows -> {
                 if (rows.size() == 0) {
-                    JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                        .status(404)
-                        .title("Not Found")
-                        .detail("用户不存在")
-                        .instance(context.request().uri())
-                        .build());
+                    JsonObject response = JsonObject.mapFrom(new ErrorResponse(null, 404, "用户不存在", "", context.request().uri()));
                     context.response().setStatusCode(404).end(response.encode());
                     return;
                 } else if (rows.size() > 1) {
-                    JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                        .status(500)
-                        .title("Internal Server Error")
-                        .detail("服务器错误")
-                        .instance(context.request().uri())
-                        .build());
+                    JsonObject response = JsonObject.mapFrom(new ErrorResponse(null, 500, "服务器错误", "", context.request().uri()));
                     context.response().setStatusCode(500).end(response.encode());
                     return;
                 }
@@ -210,32 +149,16 @@ public class HandlerSubscriber {
                         JsonObject response = new JsonObject().put("token", token);
                         context.response().end(response.encode());
                     } else {
-                        JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                            .status(401)
-                            .title("Unauthorized")
-                            .detail("密码错误")
-                            .instance(context.request().uri())
-                            .build());
+                        JsonObject response = JsonObject.mapFrom(new ErrorResponse(null, 401, "密码错误", "", context.request().uri()));
                         context.response().setStatusCode(401).end(response.encode());
                     }
                 } catch (Exception e) {
-                    JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                        .status(500)
-                        .title("Internal Server Error")
-                        .detail(e.getMessage())
-                        .instance(context.request().uri())
-                        .build());
+                    JsonObject response = JsonObject.mapFrom(new ErrorResponse(null, 500, "服务器错误", e.getMessage(), context.request().uri()));
                     context.response().setStatusCode(500).end(response.encode());
                 }
             })
             .onFailure(err -> {
-                JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                    .type("about:blank")
-                    .status(500)
-                    .title("Internal Server Error")
-                    .detail(err.getMessage())
-                    .instance(context.request().uri())
-                    .build());
+                JsonObject response = JsonObject.mapFrom(new ErrorResponse(null, 500, "服务器错误", err.getMessage(), context.request().uri()));
                 context.response().setStatusCode(500).end(response.encode());
             });
     }

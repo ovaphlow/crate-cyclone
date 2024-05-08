@@ -104,59 +104,6 @@ public class HandlerSchema {
         return pool.preparedQuery(query).execute(Tuple.wrap(params));
     }
 
-    private void retrieveSchemas(RoutingContext context) {
-        Query<RowSet<Row>> query = pool.query("select schema_name from information_schema.schemata");
-        query.execute()
-            .onSuccess(rows -> {
-                JsonArray response = new JsonArray(StreamSupport.stream(rows.spliterator(), false)
-                    .map(row -> row.getValue("schema_name"))
-                    .collect(Collectors.toList()));
-                context.response()
-                    .putHeader("content-type", "application/json")
-                    .end(response.encode());
-            })
-            .onFailure(err -> {
-                JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                    .status(500)
-                    .title("服务器错误")
-                    .detail(err.getMessage())
-                    .instance(context.request().uri())
-                    .build());
-                context.response()
-                    .putHeader("content-type", "application/json")
-                    .end(response.encode());
-            });
-    }
-
-    private void retrieveTables(RoutingContext context) {
-        String schema = context.pathParam("schema");
-        PreparedQuery<RowSet<Row>> query = pool.preparedQuery("""
-            select table_name
-            from information_schema.tables
-            where table_schema = $1;
-            """);
-        query.execute(Tuple.of(schema))
-            .onSuccess(rows -> {
-                JsonArray response = new JsonArray(StreamSupport.stream(rows.spliterator(), false)
-                    .map(row -> row.getValue("table_name"))
-                    .collect(Collectors.toList()));
-                context.response()
-                    .putHeader("content-type", "application/json")
-                    .end(response.encode());
-            })
-            .onFailure(err -> {
-                JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                    .status(500)
-                    .title("服务器错误")
-                    .detail(err.getMessage())
-                    .instance(context.request().uri())
-                    .build());
-                context.response()
-                    .putHeader("content-type", "application/json")
-                    .end(response.encode());
-            });
-    }
-
     private Future<List<Map<String, String>>> retrieveColumns(String schema, String table) {
         Promise<List<Map<String, String>>> promise = Promise.promise();
         List<Map<String, String>> columns = new ArrayList<>(List.of());
@@ -183,85 +130,6 @@ public class HandlerSchema {
         return promise.future();
     }
 
-    private void create(RoutingContext context) {
-        // 初始化参数
-        String schema = context.pathParam("schema");
-        String table = context.pathParam("table");
-        JsonObject body = new JsonObject(context.body().asString());
-
-        // 检查数据结构
-        retrieveColumns(schema, table)
-            .onSuccess(columns -> {
-                if (columns.isEmpty()) {
-                    JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                        .status(404)
-                        .title("服务器错误")
-                        .detail("")
-                        .instance(context.request().uri())
-                        .build());
-                    context.response().setStatusCode(404).putHeader("content-type", "application/json").end(response.encode());
-                    return;
-                }
-                if (!new HashSet<>(columns.stream().map(it -> it.get("column_name")).toList()).containsAll(body.fieldNames())) {
-                    JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                        .status(400)
-                        .title("服务器错误")
-                        .detail("")
-                        .instance(context.request().uri())
-                        .build());
-                    context.response().setStatusCode(400).putHeader("content-type", "application/json").end(response.encode());
-                    return;
-                }
-
-                // 填充默认值
-                body.put("id", IdUtil.getSnowflakeNextId());
-                body.put("state",
-                    new JsonObject()
-                        .put("uuid", UUID.randomUUID().toString())
-                        .put("created_at", DateUtil.formatDateTime(new Date()))
-                        .encode());
-
-                String query = "insert into " + schema + "." + table + " (";
-                query += String.join(", ", body.fieldNames());
-                query += ") values (";
-                query += body.fieldNames().stream()
-                    .map(body::getValue)
-                    .map(value -> value instanceof String ? "'" + value + "'" : value)
-                    .map(Object::toString)
-                    .collect(Collectors.joining(", "));
-                query += ")";
-                pool.query(query)
-                    .execute()
-                    .onSuccess(rows -> context.response().setStatusCode(201).end())
-                    .onFailure(err -> {
-                        logger.error(err.getMessage());
-                        JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                            .status(500)
-                            .title("服务器错误")
-                            .detail(err.getMessage())
-                            .instance(context.request().uri())
-                            .build());
-                        context.response()
-                            .setStatusCode(500)
-                            .putHeader("content-type", "application/json")
-                            .end(response.encode());
-                    });
-            })
-            .onFailure(err -> {
-                logger.error(err.getMessage());
-                JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                    .status(500)
-                    .title("服务器错误")
-                    .detail(err.getMessage())
-                    .instance(context.request().uri())
-                    .build());
-                context.response()
-                    .setStatusCode(500)
-                    .putHeader("content-type", "application/json")
-                    .end(response.encode());
-            });
-    }
-
     private void retrieve(RoutingContext context) {
         String _id = context.pathParam("id");
         Long id = Long.parseLong(_id);
@@ -269,12 +137,7 @@ public class HandlerSchema {
         retrieveColumns(context.pathParam("schema"), context.pathParam("table"))
             .onSuccess(columns -> {
                 if (columns.isEmpty()) {
-                    JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                        .status(404)
-                        .title("No schema.")
-                        .detail("")
-                        .instance(context.request().uri())
-                        .build());
+                    JsonObject response = JsonObject.mapFrom(new ErrorResponse(null, 404, "No schema.", "", context.request().uri()));
                     context.response().setStatusCode(404).putHeader("content-type", "application/json").end(response.encode());
                     return;
                 }
@@ -287,12 +150,7 @@ public class HandlerSchema {
                     .onSuccess(rows -> {
                         Row row = rows.iterator().next();
                         if (null == row) {
-                            JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                                .status(404)
-                                .title("No data.")
-                                .detail("")
-                                .instance(context.request().uri())
-                                .build());
+                            JsonObject response = JsonObject.mapFrom(new ErrorResponse(null, 404, "No data.", "", context.request().uri()));
                             context.response().setStatusCode(404).putHeader("content-type", "application/json").end(response.encode());
                             return;
                         }
@@ -306,23 +164,13 @@ public class HandlerSchema {
                         context.response().putHeader("content-type", "application/json").end(response.encode());
                     })
                     .onFailure(err -> {
-                        JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                            .status(500)
-                            .title("服务器错误")
-                            .detail(err.getMessage())
-                            .instance(context.request().uri())
-                            .build());
+                        JsonObject response = JsonObject.mapFrom(new ErrorResponse(null, 500, "服务器错误", err.getMessage(), context.request().uri()));
                         context.response().setStatusCode(500).putHeader("content-type", "application/json").end(response.encode());
                     });
             })
             .onFailure(err -> {
                 logger.error(err.getMessage());
-                JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                    .status(500)
-                    .title("服务器错误")
-                    .detail(err.getMessage())
-                    .instance(context.request().uri())
-                    .build());
+                JsonObject response = JsonObject.mapFrom(new ErrorResponse(null, 500, "服务器错误", err.getMessage(), context.request().uri()));
                 context.response().setStatusCode(500).putHeader("content-type", "application/json").end(response.encode());
             });
     }
@@ -364,12 +212,7 @@ public class HandlerSchema {
             logger.info(query);
             return pool.preparedQuery(query).execute(Tuple.wrap(params).addLong(id).addString(uuid));
         }).onSuccess(result -> context.response().setStatusCode(200).end()).onFailure(err -> {
-            JsonObject response = JsonObject.mapFrom(new ErrorResponse.Builder()
-                .status(500)
-                .title("Internal server error.")
-                .detail(err.getMessage())
-                .instance(context.request().uri())
-                .build());
+            JsonObject response = JsonObject.mapFrom(new ErrorResponse(null, 500, "服务器错误", err.getMessage(), context.request().uri()));
             context.response().setStatusCode(500).putHeader("content-type", "application/json").end(response.encode());
         });
     }

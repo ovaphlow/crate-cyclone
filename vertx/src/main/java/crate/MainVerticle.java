@@ -38,10 +38,6 @@ public class MainVerticle extends AbstractVerticle {
         router.route().handler(BodyHandler.create().setBodyLimit(1024 * 1024 * 10));
         router.route().handler(Middleware::logRequestHandler);
 
-//        new HandlerSetting(pool).setupRoutes(router);
-        new HandlerSubscriber(vertx, pool).setupRoutes(router);
-        new HandlerSchema(pool).setupRoutes(router);
-
         SchemaRepository schemaRepository = new SchemaRepository(pool);
         SchemaService schemaService = new SchemaService(schemaRepository);
         SchemaHandler schemaHandler = new SchemaHandler(schemaService);

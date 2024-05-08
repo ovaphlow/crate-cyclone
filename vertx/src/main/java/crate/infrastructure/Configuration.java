@@ -26,10 +26,10 @@ public class Configuration {
 
     public PgConnectOptions getPgConnectOptions() {
         return new PgConnectOptions()
-            .setUser(get("DB_USER"))
-            .setPassword(get("DB_PASSWORD"))
-            .setHost(get("DB_HOST"))
-            .setPort(Integer.parseInt(get("DB_PORT")))
-            .setDatabase(get("DB_NAME"));
+            .setUser(get("PGSQL_USER"))
+            .setPassword(get("PGSQL_PASSWORD"))
+            .setHost(get("PGSQL_HOST"))
+            .setPort(Integer.parseInt(get("PGSQL_PORT")))
+            .setDatabase(get("PGSQL_DATABASE"));
     }
 }
