@@ -1,5 +1,7 @@
 package crate.setting;
 
+import io.vertx.core.Future;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -10,5 +12,9 @@ public class SettingService {
 
     public SettingService(SettingRepository repo) {
         this.repo = repo;
+    }
+
+    public Future<List<Setting>> listSettings() {
+        return repo.retrieve();
     }
 }

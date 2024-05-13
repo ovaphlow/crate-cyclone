@@ -1,33 +1,58 @@
 package crate.application.handler;
 
-import crate.HandlerSchema;
+import cn.hutool.core.bean.BeanUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import crate.infrastructure.ErrorResponse;
 import crate.setting.SettingService;
-import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
-import io.vertx.sqlclient.Row;
-import io.vertx.sqlclient.RowSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.StreamSupport;
 
 public class SettingHandler {
     private final Logger logger = LoggerFactory.getLogger(SettingHandler.class);
     private final SettingService service;
+    private final ObjectMapper mapper;
 
     public SettingHandler(SettingService service) {
         this.service = service;
+        this.mapper = new ObjectMapper();
+        this.mapper.registerModule(new JavaTimeModule());
     }
 
     public void setupRoutes(Router router) {
         router.get("/crate-api/setting").handler(context -> {
             String option = context.request().getParam("option", "");
             if ("default".equals(option)) {
+                service.listSettings()
+                    .onSuccess(settings -> {
+                        logger.info("{}", settings);
+                        List<Map<String, Object>> result = new ArrayList<>();
+                        for (var setting : settings) {
+                            Map<String, Object> map = BeanUtil.beanToMap(setting);
+                            map.put("createdAt", setting.getCreatedAt().toString());
+                            map.put("updatedAt", setting.getUpdatedAt().toString());
+                            map.put("_id", setting.getId().toString());
+                            map.put("_rootId", setting.getRootId().toString());
+                            map.put("_parentId", setting.getParentId().toString());
+                            result.add(map);
+                        }
+                        JsonArray response = new JsonArray(result);
+                        logger.info("{}", response);
+                        context.response()
+                            .putHeader("content-type", "application/json")
+                            .end(response.encode());
+                    })
+                    .onFailure(err -> {
+                        JsonObject response = JsonObject.mapFrom(new ErrorResponse(null, 500, "Internal Server Error", err.getMessage(), context.request().uri()));
+                        context.response().setStatusCode(500).end(response.encode());
+                    });
 //                Future<RowSet<Row>> future = new HandlerSchema(this.pool)
 //                    .retrieve(List.of("*"),
 //                        "crate",

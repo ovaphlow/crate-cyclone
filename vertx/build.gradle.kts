@@ -34,6 +34,7 @@ dependencies {
     implementation("io.vertx:vertx-pg-client")
     implementation("com.ongres.scram:client:2.1")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.16.1")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.1")
     // https://mvnrepository.com/artifact/cn.hutool/hutool-core
     implementation("cn.hutool:hutool-core:5.8.27")
     testImplementation("io.vertx:vertx-junit5")
@@ -42,6 +43,10 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-api:2.23.1")
     implementation("org.apache.logging.log4j:log4j-core:2.23.1")
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:2.23.1")
+    // https://mvnrepository.com/artifact/org.mockito/mockito-core
+    testImplementation("org.mockito:mockito-core:5.11.0")
+    // https://mvnrepository.com/artifact/org.mockito/mockito-junit-jupiter
+    testImplementation("org.mockito:mockito-junit-jupiter:5.11.0")
 }
 
 java {
