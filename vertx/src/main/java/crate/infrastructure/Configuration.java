@@ -21,10 +21,16 @@ public class Configuration {
     }
 
     public String get(String key) {
+        String value = System.getenv(key);
+        if (null == value) {
+            value = properties.getProperty(key);
+        }
         return properties.getProperty(key);
     }
 
     public PgConnectOptions getPgConnectOptions() {
+        System.out.println("112312312312312312312");
+        System.out.println(get("PGSQL_USER"));
         return new PgConnectOptions()
             .setUser(get("PGSQL_USER"))
             .setPassword(get("PGSQL_PASSWORD"))
