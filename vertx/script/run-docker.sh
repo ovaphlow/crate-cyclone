@@ -3,20 +3,19 @@
 IMAGE_NAME="crate-vertx"
 CONTAINER_NAME="crate-vertx-container"
 
-echo "check if the container is running and stop it"
-echo "检查容器状态 并停止运行"
+echo "检查容器状态 并清理过期内容"
+
+#echo "check if the container is running and stop it"
 if [ $(docker ps -q -f name=$CONTAINER_NAME) ]; then
     docker stop $CONTAINER_NAME
 fi
 
-echo "Check if the container exists and remove it"
-echo "检查容器是否存在 并删除"
+#echo "Check if the container exists and remove it"
 if [ $(docker ps -a -q -f name=$CONTAINER_NAME) ]; then
     docker rm $CONTAINER_NAME
 fi
 
-echo "Check if the image exists and remove it"
-echo "检查镜像是否存在 并删除"
+#echo "Check if the image exists and remove it"
 if [ $(docker images -q $IMAGE_NAME) ]; then
     docker rmi $IMAGE_NAME
 fi
