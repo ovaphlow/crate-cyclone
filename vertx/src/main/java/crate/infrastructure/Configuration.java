@@ -29,8 +29,6 @@ public class Configuration {
     }
 
     public PgConnectOptions getPgConnectOptions() {
-        System.out.println("112312312312312312312");
-        System.out.println(get("PGSQL_USER"));
         return new PgConnectOptions()
             .setUser(get("PGSQL_USER"))
             .setPassword(get("PGSQL_PASSWORD"))
