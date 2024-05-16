@@ -19,5 +19,5 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('crate-api/', include('schema.urls'), name='schema')
+    path('crate-api/database/', include('schema.urls'), name='schema')
 ]
