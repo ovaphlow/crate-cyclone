@@ -130,7 +130,7 @@ public class HandlerSchema {
         return promise.future();
     }
 
-    private void retrieve(RoutingContext context) {
+    private void get(RoutingContext context) {
         String _id = context.pathParam("id");
         Long id = Long.parseLong(_id);
         String uuid = context.pathParam("uuid");
