@@ -20,7 +20,7 @@ class SchemaRepository:
                  """)
         return self.db.execute(q, params={"schema": schema, "table": table}).fetchall()
 
-    def save(self, schema, table, data):
+    def create(self, schema, table, data):
         columns = self.get_columns(schema, table)
         column_names = ", ".join(column[0] for column in columns)
         placeholders = ", ".join(":" + column[0] for column in columns)
@@ -30,3 +30,29 @@ class SchemaRepository:
                  """),
             params=data
         )
+
+    def retrieve(self, columns: list, schema: str, table: str, filters: list, options: dict):
+        take: int = options.get("take", 10)
+        skip: int = options.get("page", 1) * take - take
+        where: str = ""
+        conditions: list = []
+        params: dict = {}
+        for f in filters:
+            if f[0] == "equal":
+                if f[1] is None:
+                    continue
+                if f[2] is None:
+                    continue
+                conditions.append(f"{f[1]} = :{f[1]}")
+                params[f[1]] = f[2]
+        if len(conditions) > 0:
+            where = "where " + " and ".join(conditions)
+        q = text(f"""
+                 select {", ".join(columns)} from {schema}.{table}
+                 {where}
+                 order by id desc
+                 limit :take offset :skip
+                 """)
+        params['take'] = take
+        params['skip'] = skip
+        return self.db.execute(q, params=params).fetchall()

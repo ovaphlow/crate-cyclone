@@ -20,7 +20,7 @@ def get_db():
         db.close()
 
 
-@router.get("/db-schema")
+@router.get("/schema")
 async def schemas(request: Request, db: Session = Depends(get_db)):
     repo = SchemaRepository(db)
     service = SchemaService(repo)
@@ -28,14 +28,14 @@ async def schemas(request: Request, db: Session = Depends(get_db)):
     return service.list_schemas()
 
 
-@router.get("/{schema}/db-table")
+@router.get("/{schema}/table")
 async def tables(db: Session = Depends(get_db), schema: str = None):
     repo = SchemaRepository(db)
     service = SchemaService(repo)
     return service.list_tables(schema)
 
 
-@router.get("/{schema}/{table}/db-column")
+@router.get("/{schema}/{table}/column")
 async def columns(db: Session = Depends(get_db), schema: str = None, table: str = None):
     repo = SchemaRepository(db)
     service = SchemaService(repo)
@@ -58,3 +58,20 @@ async def save_data(request: Request, db: Session = Depends(get_db), data: dict 
             detail="An error occurred while saving data",
             instance=str(request.url)
         ))
+
+
+@router.get("/{schema}/{table}")
+async def get(request: Request, db: Session = Depends(get_db), schema: str = None, table: str = None):
+    equal = request.query_params.get("equal", None)
+    filters: list = []
+    if equal:
+        p = equal.split(',')
+        if len(p) % 2 == 0:
+            for i in p[::2]:
+                filters.append(['equal', i, p[p.index(i) + 1]])
+    repo = SchemaRepository(db)
+    service = SchemaService(repo)
+    take = int(request.query_params.get("take", "10"))
+    page = int(request.query_params.get("page", "1"))
+    options = dict(take=take, page=page)
+    return service.retrieve_data(schema, table, filters, options)

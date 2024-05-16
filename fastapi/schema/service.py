@@ -6,19 +6,22 @@ class SchemaService:
         self.repo = repo
 
     def list_schemas(self):
-        result = self.repo.get_all_schemas()
-        list_result = [row[0] for row in result]
-        return list_result
+        result = [row[0] for row in self.repo.get_all_schemas()]
+        return result
 
     def list_tables(self, schema):
-        rows = self.repo.get_tables(schema)
-        result = [row[0] for row in rows]
+        result = [row[0] for row in self.repo.get_tables(schema)]
         return result
 
     def list_columns(self, schema, table):
-        rows = self.repo.get_columns(schema, table)
-        result = [dict(zip(["column_name", "data_type"], row)) for row in rows]
+        result = [dict(zip(["column_name", "data_type"], row)) for row in self.repo.get_columns(schema, table)]
         return result
 
     def save_data(self, schema, table, data):
-        self.repo.save(schema, table, data)
+        self.repo.create(schema, table, data)
+
+    def retrieve_data(self, schema, table, filters, options):
+        columns = self.list_columns(schema, table)
+        col_list = [column["column_name"] for column in columns]
+        result = [dict(zip(col_list, row)) for row in self.repo.retrieve(col_list, schema, table, filters, options)]
+        return result
