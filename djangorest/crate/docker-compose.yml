@@ -1,0 +1,10 @@
+services:
+  web:
+    build: .
+    image: crate-django
+    container_name: crate-django-container
+    volumes:
+      - .:/app
+    ports:
+      - "8421:8421"
+    command: python manage.py runserver 0.0.0.0:8421
