@@ -1,4 +1,4 @@
-FROM azul/zulu-openjdk:21-jre-latest
+FROM azul/zulu-openjdk-alpine:21-jre-latest
 
 COPY ./build/libs/crate-cyclone-1.0.0-fat.jar /usr/app/
 COPY ./.env /usr/app/
