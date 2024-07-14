@@ -53,7 +53,7 @@ def create(schema: str, table: str, data: dict):
         raise e
 
 
-def retrieve(schema:str, table:str, columns: list, filters: list, options: dict):
+def retrieve(schema: str, table: str, columns: list, filters: list, options: dict):
     try:
         take = options.get("take", 10)
         skip = options.get("page", 1) * take - take
