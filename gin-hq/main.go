@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 	"ovaphlow/crate/hq/infrastructure"
+	"ovaphlow/crate/hq/router"
+	"ovaphlow/crate/hq/subscriber"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -75,6 +77,15 @@ func main() {
 			ctx.Abort()
 		}
 	})
+
+	r.Static("/html", "./static")
+
+	schemaRepo := infrastructure.NewSchemaRepoImpl(infrastructure.Postgres)
+	schemaService := infrastructure.NewSchemaService(schemaRepo)
+
+	subscriberRepo := subscriber.NewSubscriberRepoImpl(infrastructure.Postgres)
+	subscriberService := subscriber.NewSubscriberService(subscriberRepo, schemaService)
+	router.RegisterSubscriberRouter(r, subscriberService)
 
 	r.Run("0.0.0.0:" + os.Getenv("PORT"))
 }

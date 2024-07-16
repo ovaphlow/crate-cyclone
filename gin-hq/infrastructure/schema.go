@@ -9,19 +9,22 @@ import (
 	"time"
 )
 
-type Column struct {
-	ColumnName string `json:"column_name"`
-	DataType   string `json:"data_type"`
+type Option struct {
+	Count   bool
+	Offset  int64
+	Take    int
+	OrderBy string
 }
 
 type SchemaRepo interface {
 	listSchemas() ([]string, error)
 	listTables(schema string) ([]string, error)
-	listColumns(schema, table string) ([]Column, error)
+	listColumns(schema, table string) ([]string, error)
 	save(schema, table string, data map[string]interface{}) error
-	get(schema, table string, id int64, uuid string) (map[string]interface{}, error)
-	update(schema, table string, id int64, uuid string, data map[string]interface{}) error
-	remove(schema, table string, id int64, uuid string) error
+	get(schema, table, id string) (map[string]interface{}, error)
+	retrieve(schema, table string, conditions [][]string, option Option) ([]map[string]interface{}, error)
+	update(schema, table, id string, data map[string]interface{}) error
+	remove(schema, table, id string) error
 }
 
 type SchemaRepoImpl struct {
@@ -68,11 +71,11 @@ func (r *SchemaRepoImpl) listTables(schema string) ([]string, error) {
 	return tables, nil
 }
 
-func (r *SchemaRepoImpl) listColumns(schema, table string) ([]Column, error) {
-	columns := []Column{}
+func (r *SchemaRepoImpl) listColumns(schema, table string) ([]string, error) {
+	columns := []string{}
 	rows, err := r.db.Query(
 		`
-		SELECT column_name, data_type FROM information_schema.columns
+		SELECT column_name FROM information_schema.columns
 		WHERE table_schema = $1 AND table_name = $2
 		order by ordinal_position asc
 		`,
@@ -84,8 +87,8 @@ func (r *SchemaRepoImpl) listColumns(schema, table string) ([]Column, error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var column Column
-		err := rows.Scan(&column.ColumnName, &column.DataType)
+		var column string
+		err := rows.Scan(&column)
 		if err != nil {
 			return nil, err
 		}
@@ -113,12 +116,11 @@ func (r *SchemaRepoImpl) save(schema string, table string, data map[string]inter
 	return nil
 }
 
-func (r *SchemaRepoImpl) get(schema, table string, id int64, uuid string) (map[string]interface{}, error) {
+func (r *SchemaRepoImpl) get(schema, table, id string) (map[string]interface{}, error) {
 	data := make(map[string]interface{})
 	rows, err := r.db.Query(
-		fmt.Sprintf("select * from %s.%s where id = $1 and state ->> 'uuid' = $2", schema, table),
+		fmt.Sprintf("select * from %s.%s where id = $1", schema, table),
 		id,
-		uuid,
 	)
 	if err != nil {
 		return nil, err
@@ -151,7 +153,11 @@ func (r *SchemaRepoImpl) get(schema, table string, id int64, uuid string) (map[s
 	return data, nil
 }
 
-func (r *SchemaRepoImpl) update(schema, table string, id int64, uuid string, data map[string]interface{}) error {
+func (r *SchemaRepoImpl) retrieve(schema, table string, conditions [][]string, option Option) ([]map[string]interface{}, error) {
+	return nil, nil
+}
+
+func (r *SchemaRepoImpl) update(schema, table, id string, data map[string]interface{}) error {
 	columns := []string{}
 	params := []interface{}{}
 	for column := range data {
@@ -163,8 +169,8 @@ func (r *SchemaRepoImpl) update(schema, table string, id int64, uuid string, dat
 		}
 	}
 	_, err := r.db.Exec(
-		fmt.Sprintf("update %s.%s set %s where id = $%d and state ->> 'uuid' = $%d", schema, table, strings.Join(columns, ", "), len(params)+1, len(params)+2),
-		append(params, id, uuid)...,
+		fmt.Sprintf("update %s.%s set %s where id = $%d", schema, table, strings.Join(columns, ", "), len(params)+1),
+		append(params, id)...,
 	)
 	if err != nil {
 		return err
@@ -172,11 +178,10 @@ func (r *SchemaRepoImpl) update(schema, table string, id int64, uuid string, dat
 	return nil
 }
 
-func (r *SchemaRepoImpl) remove(schema, table string, id int64, uuid string) error {
+func (r *SchemaRepoImpl) remove(schema, table, id string) error {
 	_, err := r.db.Exec(
-		fmt.Sprintf("update %s.%s set state = state || jsonb_build_object('deleted_at', '%s') where id = $1 and state ->> 'uuid' = $2", schema, table, time.Now().Format("2006-01-02 15:04:05")),
+		fmt.Sprintf("update %s.%s set state = state || jsonb_build_object('deleted_at', '%s') where id = $1", schema, table, time.Now().Format("2006-01-02 15:04:05")),
 		id,
-		uuid,
 	)
 	if err != nil {
 		return err
@@ -200,7 +205,7 @@ func (s *SchemaService) ListTables(schema string) ([]string, error) {
 	return s.repo.listTables(schema)
 }
 
-func (s *SchemaService) ListColumns(schema, table string) ([]Column, error) {
+func (s *SchemaService) ListColumns(schema, table string) ([]string, error) {
 	return s.repo.listColumns(schema, table)
 }
 
@@ -210,17 +215,17 @@ func (s *SchemaService) Save(schema string, table string, data map[string]interf
 		return err
 	}
 	for _, column := range columns {
-		if column.ColumnName == "id" && column.DataType == "varchar" {
+		if column == "id" {
 			data["id"], err = GenerateKsuid()
 			if err != nil {
 				Slogger.Error(err.Error())
 				return err
 			}
 		}
-		if column.ColumnName == "time" {
+		if column == "time" {
 			data["time"] = time.Now().Format("2006-01-02 15:04:05")
 		}
-		if column.ColumnName == "state" && column.DataType == "jsonb" {
+		if column == "state" {
 			state := map[string]interface{}{
 				"created_at": time.Now().Format("2006-01-02 15:04:05"),
 			}
@@ -233,7 +238,7 @@ func (s *SchemaService) Save(schema string, table string, data map[string]interf
 	}
 	validateData := true
 	for _, column := range columns {
-		if _, ok := data[column.ColumnName]; !ok {
+		if _, ok := data[column]; !ok {
 			validateData = false
 			break
 		}
@@ -244,18 +249,22 @@ func (s *SchemaService) Save(schema string, table string, data map[string]interf
 	return s.repo.save(schema, table, data)
 }
 
-func (s *SchemaService) Get(schema, table string, id int64, uuid string) (map[string]interface{}, error) {
-	return s.repo.get(schema, table, id, uuid)
+func (s *SchemaService) Get(schema, table, id string) (map[string]interface{}, error) {
+	return s.repo.get(schema, table, id)
 }
 
-func (s *SchemaService) Update(schema, table string, id int64, uuid string, data map[string]interface{}) error {
+func (s *SchemaService) List(schema, table string, conditions [][]string, option Option) ([]map[string]interface{}, error) {
+	return s.repo.retrieve(schema, table, conditions, option)
+}
+
+func (s *SchemaService) Update(schema, table, id string, data map[string]interface{}) error {
 	data[fmt.Sprintf(
 		"state = state || jsonb_build_object('updated_at', '%s')",
 		time.Now().Format("2006-01-02 15:04:05"),
 	)] = nil
-	return s.repo.update(schema, table, id, uuid, data)
+	return s.repo.update(schema, table, id, data)
 }
 
-func (s *SchemaService) Remove(schema, table string, id int64, uuid string) error {
-	return s.repo.remove(schema, table, id, uuid)
+func (s *SchemaService) Remove(schema, table, id string) error {
+	return s.repo.remove(schema, table, id)
 }
