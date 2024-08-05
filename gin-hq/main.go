@@ -90,6 +90,8 @@ func main() {
 	subscriberService := subscriber.NewSubscriberService(subscriberRepo, schemaService)
 	router.RegisterSubscriberRouter(r, subscriberService)
 
+	router.RegisterServiceRouter(r)
+
 	determinTarget := func(c *gin.Context) string {
 		if c.Request.URL.Path == "service1" {
 			return "http://service1.example.com"
