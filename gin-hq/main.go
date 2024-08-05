@@ -2,6 +2,9 @@ package main
 
 import (
 	"log"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"ovaphlow/crate/hq/infrastructure"
 	"ovaphlow/crate/hq/router"
@@ -78,7 +81,7 @@ func main() {
 		}
 	})
 
-	r.Static("/html", "./static")
+	r.Static("/html", "./html")
 
 	schemaRepo := infrastructure.NewSchemaRepoImpl(infrastructure.Postgres)
 	schemaService := infrastructure.NewSchemaService(schemaRepo)
@@ -86,6 +89,33 @@ func main() {
 	subscriberRepo := subscriber.NewSubscriberRepoImpl(infrastructure.Postgres)
 	subscriberService := subscriber.NewSubscriberService(subscriberRepo, schemaService)
 	router.RegisterSubscriberRouter(r, subscriberService)
+
+	determinTarget := func(c *gin.Context) string {
+		if c.Request.URL.Path == "service1" {
+			return "http://service1.example.com"
+		} else if c.Request.URL.Path == "service2" {
+			return "http://service2.example.com"
+		}
+		return "http://default.example.com"
+	}
+
+	dynamicProxy := func(c *gin.Context) {
+		target := determinTarget(c)
+		remote, err := url.Parse(target)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		proxy := httputil.NewSingleHostReverseProxy(remote)
+		c.Request.URL.Host = remote.Host
+		c.Request.URL.Scheme = remote.Scheme
+		c.Request.Header.Set("x-forwarded-host", c.Request.Header.Get("Host"))
+		c.Request.Host = remote.Host
+		c.Request.Header.Set("x-auth", "1123")
+		proxy.ServeHTTP(c.Writer, c.Request)
+	}
+
+	r.Any("/proxy/*proxyPath", dynamicProxy)
 
 	r.Run("0.0.0.0:" + os.Getenv("PORT"))
 }
