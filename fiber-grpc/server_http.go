@@ -1,12 +1,18 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"log"
+	"net/http"
+	"os"
 	"ovaphlow/cratecyclone/configuration"
 	"ovaphlow/cratecyclone/schema"
 	"ovaphlow/cratecyclone/subscriber"
 	"ovaphlow/cratecyclone/utility"
 	"regexp"
+	"strconv"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
@@ -14,9 +20,57 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/etag"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/joho/godotenv"
 )
 
-func HTTPServe(addr string) {
+func registerService(app string, port int, url string) {
+	body := map[string]interface{}{
+		"name": app,
+		"port": port,
+		"healthCheck": map[string]interface{}{
+			"endpoint": "/crate-api/health",
+		},
+	}
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		log.Print(err.Error())
+		return
+	}
+	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
+	if err != nil {
+		log.Print("注册服务失败")
+		log.Print(err.Error())
+		return
+	}
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Print("注册服务失败")
+		log.Print(err.Error())
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		log.Print("注册服务失败")
+		log.Print(resp.Status)
+	}
+}
+
+func HTTPServe(port string) {
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("加载环境变量失败")
+		log.Println(err.Error())
+	}
+	a := os.Getenv("APP_NAME")
+	h := os.Getenv("HQ_HOST")
+	p := os.Getenv("HQ_PORT")
+	e := os.Getenv("HQ_REGISTER_ENDPOINT")
+	_port, err := strconv.Atoi(port)
+	if err != nil {
+		log.Print("端口异常 " + err.Error())
+	}
+	registerService(a, _port, h+":"+p+e)
+
 	utility.InitPostgres()
 
 	app := fiber.New(fiber.Config{
@@ -67,10 +121,8 @@ func HTTPServe(addr string) {
 		return c.Next()
 	})
 
-	app.Get("/cyclone-api/", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{
-			"message": "hola el mondo",
-		})
+	app.Get("/crate-api/health", func(c *fiber.Ctx) error {
+		return c.SendStatus(200)
 	})
 
 	app.Post("/crate-api/subscriber/refresh-token", subscriber.RefreshJwt)
@@ -93,5 +145,5 @@ func HTTPServe(addr string) {
 	AddSchemaEndpoints(app, schemaService)
 	AddSubscriberEndpoints(app, subscriberService)
 
-	log.Fatal(app.Listen(addr))
+	log.Fatal(app.Listen(":" + port))
 }

@@ -9,6 +9,7 @@ import (
 	"ovaphlow/crate/hq/infrastructure"
 	"ovaphlow/crate/hq/router"
 	"ovaphlow/crate/hq/subscriber"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -118,6 +119,15 @@ func main() {
 	}
 
 	r.Any("/proxy/*proxyPath", dynamicProxy)
+
+	sec := 15
+	duration := time.Duration(sec) * time.Second
+	ticker := time.NewTicker(duration)
+	go func() {
+		for range ticker.C {
+			router.PerformHealthCheck(sec)
+		}
+	}()
 
 	r.Run("0.0.0.0:" + os.Getenv("PORT"))
 }
