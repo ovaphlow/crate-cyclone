@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-cn" data-theme="dracula">
+
+<head>
+    <meta charset="UTF-8">
+    <title>CRATE HQ - 登录</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="//unpkg.com/alpinejs" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-md5@0.7.3"></script>
+</head>
+
+<body class="flex flex-col min-h-screen">
+    <div class="navbar bg-base-100">
+        <div class="flex-1">
+            <a class="btn btn-ghost text-xl">daisyUI</a>
+        </div>
+        <div class="flex-none">
+            <ul class="menu menu-horizontal px-1">
+                <li><a>Link</a></li>
+                <li>
+                    <details>
+                        <summary>Parent</summary>
+                        <ul class="bg-base-100 rounded-t-none p-2">
+                            <li><a>Link 1</a></li>
+                            <li><a>Link 2</a></li>
+                        </ul>
+                    </details>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <main class="flex-1 flex justify-center items-center">
+        <div class="w-2/3 card card-compact bg-base-200 shadow-xl flex flex-row p-8">
+            <div class="flex-1"></div>
+            <div class="divider divider-horizontal"></div>
+            <form class="w-80 flex flex-col gap-4" x-data="logIn()">
+                <input type="text" placeholder="用户名" class="input input-bordered w-full" x-model="username" />
+                <input type="password" placeholder="密码" class="input input-bordered w-full" x-model="password" />
+                <button class="btn btn-primary" @click.prevent="handleLogIn">登录</button>
+                <div class="w-full text-center">
+                    <p>没有账号？<a href="sign-up.html" class="link link-hover">注册</a></p>
+                </div>
+            </form>
+        </div>
+    </main>
+    <footer class="flex flex-row p-2">
+        <nav class="flex-1 grid grid-flow-col gap-4">
+            <a class="link link-hover">About us</a>
+            <a class="link link-hover">Contact</a>
+            <a class="link link-hover">Jobs</a>
+            <a class="link link-hover">Press kit</a>
+        </nav>
+        <div>
+            <p>Copyright © 2024 - All right reserved by ovaphlow</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('logIn', () => ({
+                username: '',
+                password: '',
+                handleLogIn() {
+                    if (this.username === '' || this.password === '') {
+                        alert('请填写完整信息')
+                        return
+                    }
+                    axios.post('/crate-hq-api/subscriber/log-in', { username: this.username, password: md5(this.password) })
+                        .then(response => {
+                            console.info(response)
+                        })
+                        .catch(err => {
+                            console.error(err)
+                            alert(err.response.data['detail'])
+                        })
+                }
+            }))
+        })
+    </script>
+
+</body>
+
+</html>
