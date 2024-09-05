@@ -25,8 +25,6 @@ func init() {
 	databaseType := os.Getenv("DATABASE_TYPE")
 	if databaseType == "postgres" {
 		infrastructure.InitPostgres()
-	} else if databaseType == "mysql" {
-		// Initialize MySQL
 	} else {
 		log.Panic("未设置数据库")
 	}
@@ -101,7 +99,7 @@ func main() {
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8421"
 	}
 	log.Fatal(http.ListenAndServe("0.0.0.0:"+port, mux))
 }
