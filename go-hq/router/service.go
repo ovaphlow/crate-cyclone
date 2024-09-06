@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -46,15 +47,53 @@ func PerformHealthCheck(sec int) {
 
 func RegisterServiceRouter(mux *http.ServeMux) {
 	mux.HandleFunc("/crate-hq-api/service", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
+		if r.Method == http.MethodGet {
+			w.Header().Set("Content-Type", "application/json")
+			if err := json.NewEncoder(w).Encode(ServiceList); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else if r.Method == http.MethodPost {
+			var body Service
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			flag := true
+			clientIP := strings.Split(r.RemoteAddr, ":")[0]
+			for _, service := range ServiceList {
+				if service.Name == body.Name && service.Host == clientIP && service.Port == body.Port {
+					flag = false
+					break
+				}
+			}
+			if !flag {
+				http.Error(w, "Service already exists", http.StatusConflict)
+				return
+			}
+			protocol := "http"
+			if r.TLS != nil {
+				protocol = "https"
+			}
+			body.Protocol = protocol
+			body.Host = clientIP
+			t := time.Now()
+			body.Time = t
+			body.HealthCheck.LastCheck = t
+			body.HealthCheck.Failed = 0
+			ServiceList = append(ServiceList, body)
+			w.WriteHeader(http.StatusCreated)
+		} else if r.Method == http.MethodDelete {
+			name := r.URL.Query().Get("name")
+			host := r.URL.Query().Get("host")
+			for i, service := range ServiceList {
+				if service.Name == name && service.Host == host {
+					ServiceList = append(ServiceList[:i], ServiceList[i+1:]...)
+				}
+			}
+			w.WriteHeader(http.StatusOK)
+		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
 		}
-		var body Service
-		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		// 处理 body
 	})
 }

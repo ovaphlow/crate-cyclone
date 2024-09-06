@@ -35,13 +35,13 @@ func InitPostgres() {
 	)
 	Postgres, err = sql.Open("postgres", dsn)
 	if err != nil {
-		Slogger.Error(err.Error())
 		log.Fatal(err.Error())
 	}
 	Postgres.SetConnMaxLifetime(time.Second * 30)
 	Postgres.SetMaxIdleConns(runtime.NumCPU()*2 + 1)
 	if err = Postgres.Ping(); err != nil {
-		Slogger.Error("连接数据库失败")
+		log.Println("链接数据库失败")
 		log.Fatal(err.Error())
 	}
+	log.Println("连接数据库成功")
 }

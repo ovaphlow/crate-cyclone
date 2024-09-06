@@ -1,13 +1,13 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
 	"ovaphlow/crate/hq/infrastructure"
+	"ovaphlow/crate/hq/middleware"
 	"ovaphlow/crate/hq/router"
 	"time"
 
@@ -30,42 +30,30 @@ func init() {
 	}
 }
 
+type Middleware func(http.Handler) http.Handler
+
+func applyMiddlewares(h http.Handler, middlewares ...Middleware) http.Handler {
+	for _, middleware := range middlewares {
+		h = middleware(h)
+	}
+	return h
+}
+
 func main() {
 	mux := http.NewServeMux()
 
-	// CORS 中间件
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-		w.Header().Set("Access-Control-Allow-Headers", "accept, content-type, content-length, accept-encoding, x-csrf-token, authorization")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-	})
-
-	// 安全头中间件
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-Frame-Options", "DENY")
-		w.Header().Set("X-Content-Type-Options", "nosniff")
-		w.Header().Set("X-XSS-Protection", "1; mode=block")
-	})
-
-	// API 版本中间件
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("X-API-Version", "2024-01-06")
-	})
-
 	// Ping 路由
 	mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"message": "pong"})
+		w.Write([]byte("pong"))
 	})
+
+	handler := applyMiddlewares(mux, middleware.APIVersionMiddleware, middleware.CORSMiddleware, middleware.SecurityHeadersMiddleware)
+	log.Println("中间件已加载")
 
 	// 静态文件服务
 	fs := http.FileServer(http.Dir("./html"))
 	mux.Handle("/html/", http.StripPrefix("/html", fs))
+	log.Println("静态文件服务已加载至/html")
 
 	// 注册服务路由
 	router.RegisterServiceRouter(mux)
@@ -101,7 +89,7 @@ func main() {
 	if port == "" {
 		port = "8421"
 	}
-	log.Fatal(http.ListenAndServe("0.0.0.0:"+port, mux))
+	log.Fatal(http.ListenAndServe("0.0.0.0:"+port, handler))
 }
 
 func determinTarget(r *http.Request) string {
