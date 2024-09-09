@@ -9,6 +9,8 @@ import (
 	"ovaphlow/crate/hq/infrastructure"
 	"ovaphlow/crate/hq/middleware"
 	"ovaphlow/crate/hq/router"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -67,6 +69,7 @@ func main() {
 			return
 		}
 		proxy := httputil.NewSingleHostReverseProxy(remote)
+		r.URL.Path = strings.TrimPrefix(r.URL.Path, "/proxy")
 		r.URL.Host = remote.Host
 		r.URL.Scheme = remote.Scheme
 		r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
@@ -93,10 +96,10 @@ func main() {
 }
 
 func determinTarget(r *http.Request) string {
-	if r.URL.Path == "/service1" {
-		return "http://service1.example.com"
-	} else if r.URL.Path == "/service2" {
-		return "http://service2.example.com"
+	for _, service := range router.ServiceList {
+		if strings.HasPrefix(r.URL.Path, "/proxy/"+service.Name) {
+			return service.Protocol + "://" + service.Host + ":" + strconv.Itoa(service.Port)
+		}
 	}
-	return "http://default.example.com"
+	return ""
 }
