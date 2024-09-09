@@ -9,7 +9,7 @@ dotenv.config()
 const app = new Hono()
 
 app.get('/', (c) => {
-  return c.text('Hello Hono!')
+    return c.text('Hello Hono!')
 })
 
 app.route('/crate-region-spec-api/zhcn/weixin', weixinZhCnRouter)
@@ -19,6 +19,6 @@ const port = process.env.REGION_SPEC_HTTP_PORT || 8488
 console.log(`Server is running on port ${port}`)
 
 serve({
-  fetch: app.fetch,
-  port: Number(port)
+    fetch: app.fetch,
+    port: Number(port),
 })
