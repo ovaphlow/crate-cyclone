@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"ovaphlow/crate/hq/infrastructure"
+	"ovaphlow/crate/hq/infra"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -16,10 +16,10 @@ import (
 
 type SubscriberService struct {
 	repo          SubscriberRepo
-	schemaService *infrastructure.SchemaService
+	schemaService *infra.SchemaService
 }
 
-func NewSubscriberService(repo SubscriberRepo, schemaService *infrastructure.SchemaService) *SubscriberService {
+func NewSubscriberService(repo SubscriberRepo, schemaService *infra.SchemaService) *SubscriberService {
 	return &SubscriberService{repo: repo, schemaService: schemaService}
 }
 
