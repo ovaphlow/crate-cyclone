@@ -4,6 +4,10 @@ import { Hono } from 'hono'
 import * as dotenv from 'dotenv'
 import weixinZhCnRouter from './routes/weixin-zhcn'
 import emailZhCnRouter from './routes/email-zhcn'
+import { cors } from 'hono/cors'
+import { csrf } from 'hono/csrf'
+import { logger } from 'hono/logger'
+import { secureHeaders } from 'hono/secure-headers'
 
 dotenv.config()
 
@@ -16,8 +20,8 @@ const initHQ = async () => {
         host: '127.0.0.1',
         port: 8488,
         healthCheck: {
-            endpoint: '/healthCheck'
-        }
+            endpoint: '/healthCheck',
+        },
     }
     try {
         const response = await axios.post(`http://${addr}:${port}/crate-hq-api/service`, body)
@@ -32,17 +36,13 @@ initHQ()
 
 const app = new Hono()
 
-app.use('*', async (c, next) => {
-    const { method, url } = c.req
-    const start = Date.now()
-    await next()
-    const ms = Date.now() - start
-    console.log(`${method} ${url} - ${ms}ms`)
-})
+app.use(csrf())
 
-app.get('/', (c) => {
-    return c.text('Hello Hono!')
-})
+app.use(logger())
+
+app.use(secureHeaders())
+
+app.use('*', cors())
 
 app.get('/healthCheck', (c) => {
     return c.text('OK')
@@ -52,7 +52,7 @@ app.route('/crate-region-spec-api/zhcn/weixin', weixinZhCnRouter)
 app.route('/crate-region-spec-api/zhcn/email', emailZhCnRouter)
 
 const port = process.env.REGION_SPEC_HTTP_PORT || 8488
-console.log(`Server is running on port ${port}`)
+console.info(`Server is running on port ${port}`)
 
 serve({
     fetch: app.fetch,
