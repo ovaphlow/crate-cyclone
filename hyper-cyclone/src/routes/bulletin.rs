@@ -1,43 +1,37 @@
 use hyper::{header, Response, StatusCode};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 
-use crate::utilities::http::{BoxBody, Result, STATUS_INTERNAL_SERVER_ERROR};
+use crate::utility::http::{BoxBody, Result, STATUS_INTERNAL_SERVER_ERROR};
 
-#[derive(Serialize, Deserialize)]
-struct Bulletin {
-    id: u32,
-    title: String,
-    content: String,
-}
+pub async fn handle_get(query: &str) -> Result<Response<BoxBody>, hyper::Error> {
+    let params = crate::utility::http::parse_query_string(query);
 
-impl Bulletin {
-    fn new(id: u32, title: &str, content: &str) -> Self {
-        Bulletin {
-            id: id,
-            title: title.to_string(),
-            content: content.to_string(),
+    let detail = params.get("detail").unwrap_or(&"".to_string());
+
+    match crate::bulletin::service::save_bulletin(client, detail.to_string()).await {
+        Ok(bulletin) => {
+            let json = json!({
+                "id": bulletin.id,
+                "time": bulletin.time,
+                "state": bulletin.state,
+                "detail": bulletin.detail,
+            });
+
+            let response = Response::builder()
+                .header("Content-Type", "application/json")
+                .body(Body::from(json.to_string()))
+                .unwrap();
+
+            Ok(response)
+        }
+        Err(e) => {
+            eprintln!("Error: {:?}", e);
+            let res = Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(crate::utility::http::full(STATUS_INTERNAL_SERVER_ERROR))
+                .unwrap();
+            Ok(res)
         }
     }
-}
-
-pub async fn handle_get(query: &str) -> Result<Response<BoxBody>> {
-    let params = crate::utilities::http::parse_query_string(query);
-
-    let id = params.get("id").and_then(|v| v.parse().ok()).unwrap_or(0);
-    let default_string = "".to_string();
-    let title = params.get("title").unwrap_or(&default_string);
-    let content = params.get("content").unwrap_or(&default_string);
-
-    let bulletin = Bulletin::new(id, title, content);
-    let res = match serde_json::to_string(&bulletin) {
-        Ok(json) => Response::builder()
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(crate::utilities::http::full(json))
-            .unwrap(),
-        Err(_) => Response::builder()
-            .status(StatusCode::INTERNAL_SERVER_ERROR)
-            .body(crate::utilities::http::full(STATUS_INTERNAL_SERVER_ERROR))
-            .unwrap(),
-    };
-    Ok(res)
 }

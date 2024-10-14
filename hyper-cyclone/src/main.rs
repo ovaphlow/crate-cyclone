@@ -3,10 +3,11 @@ use std::net::SocketAddr;
 use hyper::{body::Incoming as IncomingBody, Method, Request, Response, StatusCode};
 use hyper_util::rt::TokioIo;
 use tokio::net::TcpListener;
-use utilities::http::{BoxBody, Result, STATUS_NOT_FOUND};
+use utility::http::{BoxBody, Result, STATUS_NOT_FOUND};
 
+mod bulletin;
 mod routes;
-mod utilities;
+mod utility;
 
 async fn handle_request(req: Request<IncomingBody>) -> Result<Response<BoxBody>> {
     match (req.method(), req.uri().path()) {
@@ -16,7 +17,7 @@ async fn handle_request(req: Request<IncomingBody>) -> Result<Response<BoxBody>>
         },
         _ => Ok(Response::builder()
             .status(StatusCode::NOT_FOUND)
-            .body(crate::utilities::http::full(STATUS_NOT_FOUND))
+            .body(crate::utility::http::full(STATUS_NOT_FOUND))
             .unwrap()),
     }
 }

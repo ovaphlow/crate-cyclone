@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 bytes = "1.2"
+chrono = "0.4"
 dotenv = "0.15"
 http-body-util = "0.1"
 hyper = { version = "1", features = ["full"] }
