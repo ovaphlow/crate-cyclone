@@ -1,6 +1,3 @@
-use hyper::server::conn::http1;
-use hyper::service::service_fn;
-
 mod middleware;
 mod router;
 mod utility;
@@ -9,15 +6,7 @@ async fn hello(
     _: hyper::Request<hyper::body::Incoming>,
 ) -> Result<hyper::Response<http_body_util::Full<hyper::body::Bytes>>, std::convert::Infallible> {
     Ok(hyper::Response::new(http_body_util::Full::new(
-        hyper::body::Bytes::from("Hello, World!"),
-    )))
-}
-
-async fn hello1(
-    _: hyper::Request<hyper::body::Incoming>,
-) -> Result<hyper::Response<http_body_util::Full<hyper::body::Bytes>>, std::convert::Infallible> {
-    Ok(hyper::Response::new(http_body_util::Full::new(
-        hyper::body::Bytes::from("Hello, World!111"),
+        hyper::body::Bytes::from("crate cyclone with Rust and Hyper!"),
     )))
 }
 
@@ -25,8 +14,7 @@ async fn router(
     req: hyper::Request<hyper::body::Incoming>,
 ) -> Result<hyper::Response<http_body_util::Full<hyper::body::Bytes>>, std::convert::Infallible> {
     match (req.method(), req.uri().path()) {
-        (&hyper::Method::GET, "/hello") => hello(req).await,
-        (&hyper::Method::GET, "/hello1") => hello1(req).await,
+        (&hyper::Method::GET, "/") => hello(req).await,
         (&hyper::Method::GET, "/cyclone-api/bulletin") => router::bulletin::get(req).await,
 
         _ => {
@@ -55,7 +43,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let svc = tower::ServiceBuilder::new()
                 .layer_fn(middleware::logger::Logger::new)
                 .service(svc);
-            if let Err(err) = http1::Builder::new().serve_connection(io, svc).await {
+            if let Err(err) = hyper::server::conn::http1::Builder::new().serve_connection(io, svc).await {
                 eprintln!("Error serving connection: {:?}", err);
             }
         });
