@@ -1,43 +1,59 @@
-use std::net::SocketAddr;
+use hyper::server::conn::http1;
+use hyper::service::service_fn;
 
-use hyper::{body::Incoming as IncomingBody, Method, Request, Response, StatusCode};
-use hyper_util::rt::TokioIo;
-use tokio::net::TcpListener;
-use utility::http::{BoxBody, Result, STATUS_NOT_FOUND};
-
-mod bulletin;
-mod routes;
+mod router;
 mod utility;
 
-async fn handle_request(req: Request<IncomingBody>) -> Result<Response<BoxBody>> {
+use router::bulletin::{self, bulletin};
+
+async fn hello(
+    _: hyper::Request<hyper::body::Incoming>,
+) -> Result<hyper::Response<http_body_util::Full<hyper::body::Bytes>>, std::convert::Infallible> {
+    Ok(hyper::Response::new(http_body_util::Full::new(
+        hyper::body::Bytes::from("Hello, World!"),
+    )))
+}
+
+async fn hello1(
+    _: hyper::Request<hyper::body::Incoming>,
+) -> Result<hyper::Response<http_body_util::Full<hyper::body::Bytes>>, std::convert::Infallible> {
+    Ok(hyper::Response::new(http_body_util::Full::new(
+        hyper::body::Bytes::from("Hello, World!111"),
+    )))
+}
+
+async fn router(
+    req: hyper::Request<hyper::body::Incoming>,
+) -> Result<hyper::Response<http_body_util::Full<hyper::body::Bytes>>, std::convert::Infallible> {
     match (req.method(), req.uri().path()) {
-        (&Method::GET, "/crate-cyclone-api/bulletin") => {
-            let query = req.uri().query().unwrap_or("");
-            routes::bulletin::handle_get(query).await
-        },
-        _ => Ok(Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .body(crate::utility::http::full(STATUS_NOT_FOUND))
-            .unwrap()),
+        (&hyper::Method::GET, "/hello") => hello(req).await,
+        (&hyper::Method::GET, "/hello1") => hello1(req).await,
+        (&hyper::Method::GET, "/cyclone-api/bulletin") => bulletin(req).await,
+
+        _ => {
+            let mut not_found = hyper::Response::new(http_body_util::Full::new(
+                hyper::body::Bytes::from("Not Found"),
+            ));
+            *not_found.status_mut() = hyper::StatusCode::NOT_FOUND;
+            Ok(not_found)
+        }
     }
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
-    let addr: SocketAddr = "127.0.0.1:8448".parse().unwrap();
+async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 8422));
 
-    let listener = TcpListener::bind(&addr).await?;
-    println!("Listening on http://{}", addr);
+    let listener = tokio::net::TcpListener::bind(addr).await?;
 
     loop {
         let (stream, _) = listener.accept().await?;
-        let io = TokioIo::new(stream);
+
+        let io = hyper_util::rt::TokioIo::new(stream);
 
         tokio::task::spawn(async move {
-            let service = hyper::service::service_fn(move |req| handle_request(req));
-
-            if let Err(err) = hyper::server::conn::http1::Builder::new()
-                .serve_connection(io, service)
+            if let Err(err) = http1::Builder::new()
+                .serve_connection(io, service_fn(router))
                 .await
             {
                 eprintln!("Error serving connection: {:?}", err);
