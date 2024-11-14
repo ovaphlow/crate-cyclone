@@ -4,7 +4,7 @@ use hyper::service::service_fn;
 mod router;
 mod utility;
 
-use router::bulletin::{self, bulletin};
+use router::bulletin::bulletin;
 
 async fn hello(
     _: hyper::Request<hyper::body::Incoming>,
