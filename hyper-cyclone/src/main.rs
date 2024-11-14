@@ -1,10 +1,9 @@
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 
+mod middleware;
 mod router;
 mod utility;
-
-use router::bulletin::bulletin;
 
 async fn hello(
     _: hyper::Request<hyper::body::Incoming>,
@@ -28,7 +27,7 @@ async fn router(
     match (req.method(), req.uri().path()) {
         (&hyper::Method::GET, "/hello") => hello(req).await,
         (&hyper::Method::GET, "/hello1") => hello1(req).await,
-        (&hyper::Method::GET, "/cyclone-api/bulletin") => bulletin(req).await,
+        (&hyper::Method::GET, "/cyclone-api/bulletin") => router::bulletin::get(req).await,
 
         _ => {
             let mut not_found = hyper::Response::new(http_body_util::Full::new(
@@ -42,7 +41,7 @@ async fn router(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 8422));
+    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 8422));
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
 
@@ -52,10 +51,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let io = hyper_util::rt::TokioIo::new(stream);
 
         tokio::task::spawn(async move {
-            if let Err(err) = http1::Builder::new()
-                .serve_connection(io, service_fn(router))
-                .await
-            {
+            let svc = hyper::service::service_fn(router);
+            let svc = tower::ServiceBuilder::new()
+                .layer_fn(middleware::logger::Logger::new)
+                .service(svc);
+            if let Err(err) = http1::Builder::new().serve_connection(io, svc).await {
                 eprintln!("Error serving connection: {:?}", err);
             }
         });
