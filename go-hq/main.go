@@ -6,9 +6,9 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"ovaphlow/crate/hq/infra"
 	"ovaphlow/crate/hq/middleware"
 	"ovaphlow/crate/hq/router"
+	"ovaphlow/crate/hq/utility"
 	"strconv"
 	"strings"
 	"time"
@@ -22,11 +22,11 @@ func init() {
 		log.Fatal("Error loading .env file")
 	}
 
-	infra.InitSlog()
+	utility.InitSlog()
 
 	databaseType := os.Getenv("DATABASE_TYPE")
 	if databaseType == "postgres" {
-		infra.InitPostgres()
+		utility.InitPostgres()
 	} else {
 		log.Panic("未设置数据库")
 	}

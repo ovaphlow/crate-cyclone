@@ -1,4 +1,4 @@
-package infra
+package utility
 
 import (
 	"database/sql"
@@ -40,7 +40,7 @@ func InitPostgres() {
 	Postgres.SetConnMaxLifetime(time.Second * 30)
 	Postgres.SetMaxIdleConns(runtime.NumCPU()*2 + 1)
 	if err = Postgres.Ping(); err != nil {
-		log.Println("链接数据库失败")
+		log.Println("连接数据库失败")
 		log.Fatal(err.Error())
 	}
 	log.Println("连接数据库成功")
