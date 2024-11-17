@@ -6,6 +6,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"ovaphlow/crate/hq/dbutil"
 	"ovaphlow/crate/hq/middleware"
 	"ovaphlow/crate/hq/router"
 	"ovaphlow/crate/hq/utility"
@@ -52,7 +53,7 @@ func main() {
 	handler := applyMiddlewares(mux, middleware.APIVersionMiddleware, middleware.CORSMiddleware, middleware.SecurityHeadersMiddleware)
 	log.Println("中间件已加载")
 
-	// 静态文件服务
+	// 静态���件服务
 	fs := http.FileServer(http.Dir("./html"))
 	mux.Handle("/html/", http.StripPrefix("/html", fs))
 	log.Println("静态文件服务已加载至/html")
@@ -87,6 +88,10 @@ func main() {
 			router.PerformHealthCheck(sec)
 		}
 	}()
+
+	shared_repo := dbutil.NewSharedRepo(utility.Postgres)
+	appService := dbutil.NewApplicationService(shared_repo)
+	router.LoadSharedRouter(mux, "/cyclone-api", appService)
 
 	port := os.Getenv("PORT")
 	if port == "" {
