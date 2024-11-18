@@ -1,30 +1,38 @@
 package utility
 
 import (
-	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
-func GetHTTPErrorResponse(title string, status int, r *http.Request) string {
-	res := map[string]interface{}{
+// CreateHTTPResponseRFC9457 创建符合RFC9457格式的HTTP响应。
+//
+// 参数:
+//   - title (string): 响应的标题。
+//   - status (int): HTTP状态码。
+//   - r (*http.Request): 与响应关联的HTTP请求。
+//
+// 返回:
+//   - map[string]interface{}: HTTP响应的映射。
+func CreateHTTPResponseRFC9457(title string, status int, r *http.Request) map[string]interface{} {
+	return map[string]interface{}{
 		"type":     "about:blank",
 		"title":    title,
 		"status":   status,
 		"detail":   "",
 		"instance": r.Method + " " + r.RequestURI,
 	}
-	result, err := json.Marshal(res)
-	if err != nil {
-		log.Println("Error marshalling HTTP error response:", err)
-		return ""
-	}
-	return string(result)
 }
 
-func parseQueryString(filter []string) ([]string, error) {
+// parseFilterConditions 解析查询字符串为过滤条件。
+//
+// 参数:
+//   - filter ([]string): 包含过滤条件的切片。
+//
+// 返回:
+//   - ([]string, error): 解析后的过滤条件或解析失败时的错误。
+func parseFilterConditions(filter []string) ([]string, error) {
 	if filter[0] == "equal" {
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
@@ -57,7 +65,14 @@ func parseQueryString(filter []string) ([]string, error) {
 	return nil, nil
 }
 
-func ParseQueryString2DefaultFilter(qs string) ([][]string, error) {
+// ConvertQueryStringToDefaultFilter 将查询字符串解析为默认过滤器。
+//
+// 参数:
+//   - qs (string): 原始查询字符串。
+//
+// 返回:
+//   - ([][]string, error): 解析后的过滤条件切片或解析失败时的错误。
+func ConvertQueryStringToDefaultFilter(qs string) ([][]string, error) {
 	result := [][]string{}
 	if qs == "" {
 		return result, nil
@@ -69,7 +84,7 @@ func ParseQueryString2DefaultFilter(qs string) ([][]string, error) {
 			return nil, err
 		}
 		p := filter[0 : 2+qty]
-		parameter, err := parseQueryString(p)
+		parameter, err := parseFilterConditions(p)
 		if err != nil {
 			return nil, err
 		}

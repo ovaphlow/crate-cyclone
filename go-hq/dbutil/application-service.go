@@ -2,10 +2,12 @@ package dbutil
 
 import (
 	"encoding/json"
+	"fmt"
 	"ovaphlow/crate/hq/utility"
 	"time"
 )
 
+// ApplicationService 定义了应用服务操作的接口。
 type ApplicationService interface {
 	Create(st string, d map[string]interface{}) error
 	Get(st string, f [][]string, l string) (map[string]interface{}, error)
@@ -13,14 +15,24 @@ type ApplicationService interface {
 	Remove(st string, w string) error
 }
 
+// ApplicationServiceImpl 实现了 ApplicationService 接口。
 type ApplicationServiceImpl struct {
-	repo *SharedRepoImpl
+	repo SharedRepo
 }
 
-func NewApplicationService(repo *SharedRepoImpl) *ApplicationServiceImpl {
+// NewApplicationService 创建一个新的 ApplicationServiceImpl 实例。
+func NewApplicationService(repo SharedRepo) *ApplicationServiceImpl {
 	return &ApplicationServiceImpl{repo: repo}
 }
 
+// Create 创建一个新的应用服务记录。
+//
+// 参数:
+//   - st: 服务类型。
+//   - d: 应用服务数据。
+//
+// 返回值:
+//   - error: 如果创建失败，返回相应的错误。
 func (s *ApplicationServiceImpl) Create(st string, d map[string]interface{}) error {
 	// id
 	id, err := utility.GenerateKsuid()
@@ -47,16 +59,73 @@ func (s *ApplicationServiceImpl) Create(st string, d map[string]interface{}) err
 	return s.repo.Create(st, d)
 }
 
-func (s *ApplicationServiceImpl) Get(st string, f [][]string, l string) (map[string]interface{}, error) {
-	return nil, nil
+// GetMany 获取多个应用服务记录。
+//
+// 参数:
+//   - st: 服务类型。
+//   - f: 查询过滤条件。
+//   - l: 限制条件。
+//
+// 返回值:
+//   - []map[string]interface{}: 应用服务数据列表。
+//   - error: 如果获取失败，返回相应的错误。
+func (s *ApplicationServiceImpl) GetMany(st string, f [][]string, l string) ([]map[string]interface{}, error) {
+	return s.repo.Get(st, nil, f, l)
 }
 
-// 修改
-// 逻辑删除：更新 state 列 { "deprecated": true }
+// Get 获取单个应用服务记录。
+//
+// 参数:
+//   - st: 服务类型。
+//   - f: 查询过滤条件。
+//   - l: 限制条件。
+//
+// 返回值:
+//   - map[string]interface{}: 应用服务数据。
+//   - error: 如果获取失败，返回相应的错误。
+func (s *ApplicationServiceImpl) Get(st string, f [][]string, l string) (map[string]interface{}, error) {
+	data, err := s.repo.Get(st, nil, f, l+" limit 1")
+	if err != nil {
+		return nil, err
+	}
+	if len(data) == 0 {
+		return nil, fmt.Errorf("记录不存在")
+	}
+	return data[0], nil
+}
+
+// Update 更新应用服务记录。
+//
+// 参数:
+//   - st: 服���类型。
+//   - d: 更新的数据。
+//   - w: 更新条件���
+//   - deprecated: 是否标记��弃用。
+//
+// 返回值:
+//   - error: 如果更新失败，返��相应的错误。
 func (s *ApplicationServiceImpl) Update(st string, d map[string]interface{}, w string, deprecated bool) error {
-	// state
-	state := map[string]interface{}{
-		"updated_at": time.Now().Format("2006-01-02 15:04:05-0700"),
+	id, ok := d["id"].(string)
+	if !ok {
+		return fmt.Errorf("缺少ID")
+	}
+
+	existingData, err := s.repo.Get(st, []string{"state"}, [][]string{{"equal", "id", id}}, "")
+	if err != nil {
+		return err
+	}
+	if len(existingData) == 0 {
+		return fmt.Errorf("记录不存在")
+	}
+
+	var state map[string]interface{}
+	err = json.Unmarshal([]byte(existingData[0]["state"].(string)), &state)
+	if err != nil {
+		return err
+	}
+	state["updated_at"] = time.Now().Format("2006-01-02 15:04:05-0700")
+	if deprecated {
+		state["deprecated"] = true
 	}
 	stateJson, err := json.Marshal(state)
 	if err != nil {
@@ -67,8 +136,14 @@ func (s *ApplicationServiceImpl) Update(st string, d map[string]interface{}, w s
 	return s.repo.Update(st, d, w)
 }
 
-// 物理删除
-// 逻辑删除: 使用 Update()
+// Remove 移除应用服务记录。
+//
+// 参数:
+//   - st: 服务类型。
+//   - w: 移除条件。
+//
+// 返回值:
+//   - error: 如果移除失败，返回相应��错误。
 func (s *ApplicationServiceImpl) Remove(st string, w string) error {
-	return nil
+	return s.repo.Remove(st, w)
 }

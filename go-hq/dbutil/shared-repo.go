@@ -8,9 +8,13 @@ import (
 	"strings"
 )
 
-// 指定表的列名
-// db 数据库连接
-// sat schema and table example:"public.setting"
+// get_columns 获取指定 schema 和表的列名。
+// 参数：
+// - db：数据库连接
+// - sat：schema 和表，格式如 "schema.table"
+// 返回值：
+// - []string：列名列表
+// - error：错误信息
 func get_columns(db *sql.DB, sat string) ([]string, error) {
 	st := strings.Split(sat, ".")
 	if len(st) != 2 {
@@ -45,9 +49,37 @@ func get_columns(db *sql.DB, sat string) ([]string, error) {
 }
 
 type SharedRepo interface {
+	// Create 插入一条新记录到指定的表。
+	// 参数：
+	// - st：schema 和表，格式如 "schema.table"
+	// - d：要插入的数据
+	// 返回值：
+	// - error：错误信息
 	Create(st string, d map[string]interface{}) error
-	Get(st string, f [][]string, l string) ([]map[string]interface{}, error)
+	// Get 根据条件从指定的表中检索记录。
+	// 参数：
+	// - st：schema 和表，格式如 "schema.table"
+	// - c：要检索的列，例如 ["id", "name"]
+	// - f：过滤条件，例如 [["equal", "name", "John Doe"], ["in", "id", "1a", "1b"]]
+	// - l：附加子句，例如 "order by id desc limit 20 offset 0"
+	// 返回值：
+	// - []map[string]interface{}：检索到的记录
+	// - error：错误信息
+	Get(st string, c []string, f [][]string, l string) ([]map[string]interface{}, error)
+	// Update 根据条件修改指定表中的记录。
+	// 参数：
+	// - st：schema 和表，格式如 "schema.table"
+	// - d：要更新的数据
+	// - w：WHERE 条件，例如 "id='1a'"
+	// 返回值：
+	// - error：错误信息
 	Update(st string, d map[string]interface{}, w string) error
+	// Remove 根据条件删除指定表中的记录。
+	// 参数：
+	// - st：schema 和表，格式如 "schema.table"
+	// - w：WHERE 条件，例如 "id='1a'"
+	// 返回值：
+	// - error：错误信息
 	Remove(st string, w string) error
 }
 
@@ -55,13 +87,21 @@ type SharedRepoImpl struct {
 	db *sql.DB
 }
 
+// NewSharedRepo 创建一个新的 SharedRepoImpl 实例。
+// 参数：
+// - db：数据库连接
+// 返回值：
+// - *SharedRepoImpl：SharedRepoImpl 实例
 func NewSharedRepo(db *sql.DB) *SharedRepoImpl {
 	return &SharedRepoImpl{db: db}
 }
 
-// 新增数据
-// st schema and table example:"public.setting"
-// d 数据
+// Create 插入一条新记录到指定的表。
+// 参数：
+// - st：schema 和表，格式如 "schema.table"
+// - d：要插入的数据
+// 返回值：
+// - error：错误信息
 func (r *SharedRepoImpl) Create(st string, d map[string]interface{}) error {
 	columns, err := get_columns(r.db, st)
 	if err != nil {
@@ -101,17 +141,134 @@ func (r *SharedRepoImpl) Create(st string, d map[string]interface{}) error {
 	return err
 }
 
-// 查询
-// st schema and table example:"public.setting"
-// f 查询条件 example:[["equal", "name", "John Doe"], ["in", "id", "1a", "1b"]]
-// l strings to append example:"order by id desc limit 20 offset 0"
-func (r *SharedRepoImpl) Get(st string, f [][]string, l string) ([]map[string]interface{}, error) {
-	return nil, nil
+// Get 根据条件从指定的表中检索记录。
+// 参数：
+// - st：schema 和表，格式如 "schema.table"
+// - c：要检索的列，例如 ["id", "name"]
+// - f：过滤条件，例如 [["equal", "name", "John Doe"], ["in", "id", "1a", "1b"]]
+// - l：附加子句，例如 "order by id desc limit 20 offset 0"
+// 返回值：
+// - []map[string]interface{}：检索到的记录
+// - error：错误信息
+func (r *SharedRepoImpl) Get(st string, c []string, f [][]string, l string) ([]map[string]interface{}, error) {
+	if len(c) == 0 {
+		var err error
+		c, err = get_columns(r.db, st)
+		if err != nil {
+			return nil, err
+		}
+	}
+	q := fmt.Sprintf("select %s from %s", strings.Join(c, ", "), st)
+
+	var whereClauses []string
+	var params []interface{}
+	paramIndex := 1
+
+	for _, condition := range f {
+		if len(condition) < 3 {
+			continue
+		}
+		field := condition[1]
+		operator := condition[0]
+		switch operator {
+		case "equal":
+			whereClauses = append(whereClauses, fmt.Sprintf("%s = $%d", field, paramIndex))
+			params = append(params, condition[2])
+			paramIndex++
+		case "not-equal":
+			whereClauses = append(whereClauses, fmt.Sprintf("%s != $%d", field, paramIndex))
+			params = append(params, condition[2])
+			paramIndex++
+		case "in":
+			placeholders := make([]string, len(condition)-2)
+			for i := range placeholders {
+				placeholders[i] = fmt.Sprintf("$%d", paramIndex)
+				params = append(params, condition[i+2])
+				paramIndex++
+			}
+			whereClauses = append(whereClauses, fmt.Sprintf("%s in (%s)", field, strings.Join(placeholders, ", ")))
+		case "not-in":
+			placeholders := make([]string, len(condition)-2)
+			for i := range placeholders {
+				placeholders[i] = fmt.Sprintf("$%d", paramIndex)
+				params = append(params, condition[i+2])
+				paramIndex++
+			}
+			whereClauses = append(whereClauses, fmt.Sprintf("%s not in (%s)", field, strings.Join(placeholders, ", ")))
+		case "greater":
+			whereClauses = append(whereClauses, fmt.Sprintf("%s > $%d", field, paramIndex))
+			params = append(params, condition[2])
+			paramIndex++
+		case "greater-equal":
+			whereClauses = append(whereClauses, fmt.Sprintf("%s >= $%d", field, paramIndex))
+			params = append(params, condition[2])
+			paramIndex++
+		case "less":
+			whereClauses = append(whereClauses, fmt.Sprintf("%s < $%d", field, paramIndex))
+			params = append(params, condition[2])
+			paramIndex++
+		case "less-equal":
+			whereClauses = append(whereClauses, fmt.Sprintf("%s <= $%d", field, paramIndex))
+			params = append(params, condition[2])
+			paramIndex++
+		case "jsonb-array-contains":
+			whereClauses = append(whereClauses, fmt.Sprintf("%s @> '["+"%s"+"]'::jsonb", field, condition[2]))
+			params = append(params, condition[2])
+			paramIndex++
+		case "jsonb-object-contains":
+			whereClauses = append(whereClauses, fmt.Sprintf("%s @> $%d::jsonb", field, paramIndex))
+			params = append(params, fmt.Sprintf(`{"%s": "%s"}`, condition[1], condition[2]))
+			paramIndex++
+		}
+	}
+
+	if len(whereClauses) > 0 {
+		q += " where " + strings.Join(whereClauses, " AND ")
+	}
+
+	if l != "" {
+		q += " " + l
+	}
+
+	stmt, err := r.db.Prepare(q)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(params...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	results := []map[string]interface{}{}
+	for rows.Next() {
+		row := make(map[string]interface{})
+		columns := make([]interface{}, len(c))
+		columnPointers := make([]interface{}, len(c))
+		for i := range columns {
+			columnPointers[i] = &columns[i]
+		}
+		if err := rows.Scan(columnPointers...); err != nil {
+			return nil, err
+		}
+		for i, colName := range c {
+			row[colName] = columns[i]
+		}
+		results = append(results, row)
+	}
+
+	return results, nil
 }
 
-// 修改
-// st schema and table example:"public.setting"
-// d 数据
+// Update 根据条件修改指定表中的记录。
+// 参数：
+// - st：schema 和表，格式如 "schema.table"
+// - d：要更新的数据
+// - w：WHERE 条件，例如 "id='1a'"
+// 返回值：
+// - error：错误信息
 func (r *SharedRepoImpl) Update(st string, d map[string]interface{}, w string) error {
 	columns, err := get_columns(r.db, st)
 	if err != nil {
@@ -149,11 +306,223 @@ func (r *SharedRepoImpl) Update(st string, d map[string]interface{}, w string) e
 	return nil
 }
 
-// 删除
-// st schema and table example:"public.setting"
-// w strings to append example:"id='1a'"
+// Remove 根据条件删除指定表中的记录。
+// 参数：
+// - st：schema 和表，格式如 "schema.table"
+// - w：WHERE 条件，例如 "id='1a'"
+// 返回值：
+// - error：错误信息
 func (r *SharedRepoImpl) Remove(st string, w string) error {
 	q := fmt.Sprintf("delete from %s where %s", st, w)
+	stmt, err := r.db.Prepare(q)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type SharedRepoImplMySQL struct {
+	db *sql.DB
+}
+
+// NewSharedRepoMySQL 创建一个新的 SharedRepoImplMySQL 实例。
+// 参数：
+// - db：数据库连接
+// 返回值：
+// - *SharedRepoImplMySQL：SharedRepoImplMySQL 实例
+func NewSharedRepoMySQL(db *sql.DB) *SharedRepoImplMySQL {
+	return &SharedRepoImplMySQL{db: db}
+}
+
+// Create 插入一条新记录到指定的表（MySQL）。
+// 参数：
+// - st：schema 和表，格式如 "schema.table"
+// - d：要插入的数据
+// 返回值：
+// - error：错误信息
+func (r *SharedRepoImplMySQL) Create(st string, d map[string]interface{}) error {
+	columns, err := get_columns(r.db, st)
+	if err != nil {
+		return err
+	}
+
+	var placeholders []string
+	var values []interface{}
+	for _, column := range columns {
+		if val, ok := d[column]; ok {
+			placeholders = append(placeholders, "?")
+			values = append(values, val)
+		}
+	}
+
+	q := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", st, strings.Join(columns, ", "), strings.Join(placeholders, ", "))
+	stmt, err := r.db.Prepare(q)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(values...)
+	return err
+}
+
+// Get 根据条件从指定的表中检索记录。
+// 参数：
+// - st：schema 和表，格式如 "schema.table"
+// - c：要检索的列，例如 ["id", "name"]
+// - f：过滤条件，例如 [["equal", "name", "John Doe"], ["in", "id", "1a", "1b"]]
+// - l：附加子句，例如 "order by id desc limit 20 offset 0"
+// 返回值：
+// - []map[string]interface{}：检索到的记录
+// - error：错误信息
+func (r *SharedRepoImplMySQL) Get(st string, c []string, f [][]string, l string) ([]map[string]interface{}, error) {
+	if len(c) == 0 {
+		var err error
+		c, err = get_columns(r.db, st)
+		if err != nil {
+			return nil, err
+		}
+	}
+	q := fmt.Sprintf("SELECT %s FROM %s", strings.Join(c, ", "), st)
+
+	var whereClauses []string
+	var params []interface{}
+
+	for _, condition := range f {
+		if len(condition) < 3 {
+			continue
+		}
+		field := condition[1]
+		operator := condition[0]
+		switch operator {
+		case "equal":
+			whereClauses = append(whereClauses, fmt.Sprintf("%s = ?", field))
+			params = append(params, condition[2])
+		case "not-equal":
+			whereClauses = append(whereClauses, fmt.Sprintf("%s != ?", field))
+			params = append(params, condition[2])
+		case "in":
+			placeholders := strings.Repeat("?,", len(condition)-2)
+			placeholders = placeholders[:len(placeholders)-1]
+			whereClauses = append(whereClauses, fmt.Sprintf("%s IN (%s)", field, placeholders))
+			for _, v := range condition[2:] {
+				params = append(params, v)
+			}
+		case "not-in":
+			placeholders := strings.Repeat("?,", len(condition)-2)
+			placeholders = placeholders[:len(placeholders)-1]
+			whereClauses = append(whereClauses, fmt.Sprintf("%s NOT IN (%s)", field, placeholders))
+			for _, v := range condition[2:] {
+				params = append(params, v)
+			}
+		case "greater":
+			whereClauses = append(whereClauses, fmt.Sprintf("%s > ?", field))
+			params = append(params, condition[2])
+		case "greater-equal":
+			whereClauses = append(whereClauses, fmt.Sprintf("%s >= ?", field))
+			params = append(params, condition[2])
+		case "less":
+			whereClauses = append(whereClauses, fmt.Sprintf("%s < ?", field))
+			params = append(params, condition[2])
+		case "less-equal":
+			whereClauses = append(whereClauses, fmt.Sprintf("%s <= ?", field))
+			params = append(params, condition[2])
+		case "jsonb-array-contains":
+			whereClauses = append(whereClauses, fmt.Sprintf("JSON_CONTAINS(%s, '\"%s\"')", field, condition[2]))
+		case "jsonb-object-contains":
+			whereClauses = append(whereClauses, fmt.Sprintf("JSON_CONTAINS(%s, ?, '$')", field))
+			params = append(params, fmt.Sprintf(`{"%s": "%s"}`, condition[1], condition[2]))
+		}
+	}
+
+	if len(whereClauses) > 0 {
+		q += " WHERE " + strings.Join(whereClauses, " AND ")
+	}
+
+	if l != "" {
+		q += " " + l
+	}
+
+	stmt, err := r.db.Prepare(q)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(params...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	results := []map[string]interface{}{}
+	for rows.Next() {
+		row := make(map[string]interface{})
+		columns := make([]interface{}, len(c))
+		columnPointers := make([]interface{}, len(c))
+		for i := range columns {
+			columnPointers[i] = &columns[i]
+		}
+		if err := rows.Scan(columnPointers...); err != nil {
+			return nil, err
+		}
+		for i, colName := range c {
+			row[colName] = columns[i]
+		}
+		results = append(results, row)
+	}
+
+	return results, nil
+}
+
+// Update 根据条件修改指定表中的记录（MySQL）。
+// 参数：
+// - st：schema 和表，格式如 "schema.table"
+// - d：要更新的数据
+// - w：WHERE 条件，例如 "id='1a'"
+// 返回值：
+// - error：错误信息
+func (r *SharedRepoImplMySQL) Update(st string, d map[string]interface{}, w string) error {
+	columns, err := get_columns(r.db, st)
+	if err != nil {
+		return err
+	}
+
+	q := fmt.Sprintf("UPDATE %s SET ", st)
+	var assignments []string
+	var values []interface{}
+	for _, column := range columns {
+		if val, ok := d[column]; ok {
+			assignments = append(assignments, fmt.Sprintf("%s = ?", column))
+			values = append(values, val)
+		}
+	}
+	q += strings.Join(assignments, ", ")
+	q += " WHERE " + w
+
+	stmt, err := r.db.Prepare(q)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(values...)
+	return err
+}
+
+// Remove 根据条件删除指定表中的记录（MySQL）。
+// 参数：
+// - st：schema 和表，格式如 "schema.table"
+// - w：WHERE 条件，例如 "id='1a'"
+// 返回值：
+// - error：错误信息
+func (r *SharedRepoImplMySQL) Remove(st string, w string) error {
+	q := fmt.Sprintf("DELETE FROM %s WHERE %s", st, w)
 	stmt, err := r.db.Prepare(q)
 	if err != nil {
 		return err
