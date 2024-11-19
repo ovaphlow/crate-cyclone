@@ -124,6 +124,7 @@ func main() {
 	if port == "" {
 		port = "8421"
 	}
+	log.Println("0.0.0.0:" + port)
 	log.Fatal(http.ListenAndServe("0.0.0.0:"+port, handler))
 }
 

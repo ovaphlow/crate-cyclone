@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -229,6 +230,7 @@ func (r *SharedRepoImpl) Get(st string, c []string, f [][]string, l string) ([]m
 	if l != "" {
 		q += " " + l
 	}
+	log.Println(q)
 
 	stmt, err := r.db.Prepare(q)
 	if err != nil {
@@ -326,6 +328,33 @@ func (r *SharedRepoImpl) Remove(st string, w string) error {
 	return nil
 }
 
+func get_columns_mysql(db *sql.DB, st string) ([]string, error) {
+	slice := strings.Split(st, ".")
+	if len(slice) != 2 {
+		return nil, fmt.Errorf("参数错误 schema table")
+	}
+	query := `
+	select column_name
+	from information_schema.columns
+	where table_schema = ? and table_name = ?
+	order by ordinal_position;
+	`
+	rows, err := db.Query(query, slice[0], slice[1])
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	columns := []string{}
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		columns = append(columns, name)
+	}
+	return columns, nil
+}
+
 type SharedRepoImplMySQL struct {
 	db *sql.DB
 }
@@ -383,7 +412,7 @@ func (r *SharedRepoImplMySQL) Create(st string, d map[string]interface{}) error 
 func (r *SharedRepoImplMySQL) Get(st string, c []string, f [][]string, l string) ([]map[string]interface{}, error) {
 	if len(c) == 0 {
 		var err error
-		c, err = get_columns(r.db, st)
+		c, err = get_columns_mysql(r.db, st)
 		if err != nil {
 			return nil, err
 		}
@@ -460,24 +489,42 @@ func (r *SharedRepoImplMySQL) Get(st string, c []string, f [][]string, l string)
 	}
 	defer rows.Close()
 
-	results := []map[string]interface{}{}
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	var result []map[string]interface{}
+	values := make([]interface{}, len(columns))
+	valuePtrs := make([]interface{}, len(columns))
 	for rows.Next() {
-		row := make(map[string]interface{})
-		columns := make([]interface{}, len(c))
-		columnPointers := make([]interface{}, len(c))
 		for i := range columns {
-			columnPointers[i] = &columns[i]
+			valuePtrs[i] = &values[i]
 		}
-		if err := rows.Scan(columnPointers...); err != nil {
+		if err := rows.Scan(valuePtrs...); err != nil {
 			return nil, err
 		}
-		for i, colName := range c {
-			row[colName] = columns[i]
+		m := make(map[string]interface{})
+		for i, col := range columns {
+			val := values[i]
+			if val == nil {
+				m[col] = nil
+			} else {
+				switch v := val.(type) {
+				case []byte:
+					m[col] = string(v)
+				case int, int8, int16, int32, int64:
+					m[col] = strconv.FormatInt(reflect.ValueOf(v).Int(), 10)
+				case uint, uint8, uint16, uint32, uint64:
+					m[col] = strconv.FormatUint(reflect.ValueOf(v).Uint(), 10)
+				default:
+					m[col] = v
+				}
+			}
 		}
-		results = append(results, row)
+		result = append(result, m)
 	}
 
-	return results, nil
+	return result, nil
 }
 
 // Update 根据条件修改指定表中的记录（MySQL）。
@@ -488,7 +535,7 @@ func (r *SharedRepoImplMySQL) Get(st string, c []string, f [][]string, l string)
 // 返回值：
 // - error：错误信息
 func (r *SharedRepoImplMySQL) Update(st string, d map[string]interface{}, w string) error {
-	columns, err := get_columns(r.db, st)
+	columns, err := get_columns_mysql(r.db, st)
 	if err != nil {
 		return err
 	}

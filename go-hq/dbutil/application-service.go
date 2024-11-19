@@ -70,7 +70,14 @@ func (s *ApplicationServiceImpl) Create(st string, d map[string]interface{}) err
 //   - []map[string]interface{}: 应用服务数据列表。
 //   - error: 如果获取失败，返回相应的错误。
 func (s *ApplicationServiceImpl) GetMany(st string, f [][]string, l string) ([]map[string]interface{}, error) {
-	return s.repo.Get(st, nil, f, l)
+	result, err := s.repo.Get(st, nil, f, l)
+	if err != nil {
+		return nil, err
+	}
+	if len(result) == 0 {
+		return []map[string]interface{}{}, nil
+	}
+	return result, nil
 }
 
 // Get 获取单个应用服务记录。
@@ -89,7 +96,7 @@ func (s *ApplicationServiceImpl) Get(st string, f [][]string, l string) (map[str
 		return nil, err
 	}
 	if len(data) == 0 {
-		return nil, fmt.Errorf("记录不存在")
+		return map[string]interface{}{}, fmt.Errorf("记录不存在")
 	}
 	return data[0], nil
 }
@@ -97,10 +104,10 @@ func (s *ApplicationServiceImpl) Get(st string, f [][]string, l string) (map[str
 // Update 更新应用服务记录。
 //
 // 参数:
-//   - st: 服���类型。
+//   - st: schema and table。
 //   - d: 更新的数据。
-//   - w: 更新条件���
-//   - deprecated: 是否标记��弃用。
+//   - w: 更新条件字符串
+//   - deprecated: 是否标记数据弃用。
 //
 // 返回值:
 //   - error: 如果更新失败，返��相应的错误。

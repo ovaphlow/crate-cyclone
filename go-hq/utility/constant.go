@@ -1,6 +1,7 @@
 package utility
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -32,35 +33,42 @@ func CreateHTTPResponseRFC9457(title string, status int, r *http.Request) map[st
 //
 // 返回:
 //   - ([]string, error): 解析后的过滤条件或解析失败时的错误。
-func parseFilterConditions(filter []string) ([]string, error) {
+func parseFilterConditions(filter []string) ([][]string, error) {
 	if filter[0] == "equal" {
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
 			return nil, err
 		}
-		v := filter[2 : 2+c]
-		return append([]string{"equal"}, v...), nil
+		if c%2 != 0 {
+			return nil, fmt.Errorf("参数数量错误")
+		}
+
+		var result [][]string
+		for i := 0; i < c; i += 2 {
+			result = append(result, []string{"equal", filter[2+i], filter[3+i]})
+		}
+		return result, nil
 	} else if filter[0] == "in" {
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
 			return nil, err
 		}
 		v := filter[2 : 2+c]
-		return append([]string{"in"}, v...), nil
+		return [][]string{append([]string{"in"}, v...)}, nil
 	} else if filter[0] == "array-contain" {
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
 			return nil, err
 		}
 		v := filter[2 : 2+c]
-		return append([]string{"array-contain"}, v...), nil
+		return [][]string{append([]string{"json-array-contains"}, v...)}, nil
 	} else if filter[0] == "object-contain" {
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
 			return nil, err
 		}
 		v := filter[2 : 2+c]
-		return append([]string{"object-contain"}, v...), nil
+		return [][]string{append([]string{"json-object-contains"}, v...)}, nil
 	}
 	return nil, nil
 }
@@ -88,7 +96,7 @@ func ConvertQueryStringToDefaultFilter(qs string) ([][]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, parameter)
+		result = append(result, parameter...)
 		filter = filter[2+qty:]
 	}
 	return result, nil

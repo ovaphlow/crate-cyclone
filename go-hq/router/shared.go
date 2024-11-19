@@ -10,18 +10,21 @@ import (
 
 // LoadSharedRouter 设置 GET 和 POST 路由。
 // 该函数加载共享路由并配置 GET 和 POST 请求的处理程序。
+//
 // 参数:
-// - mux: 用于注册路由和处理程序的 HTTP 请求多路复用器。
-// - prefix: 定义路由基本路径的路由前缀。
-// - service: 用于处理业务逻辑的应用服务实例。
-// 返回值: 无
+//   - mux: 用于注册路由和处理程序的 HTTP 请求多路复用器。
+//   - prefix: 定义路由基本路径的路由前缀。
+//   - service: 用于处理业务逻辑的应用服务实例。
+//
+// 返回值:
+//   - 无
 func LoadSharedRouter(mux *http.ServeMux, prefix string, service *dbutil.ApplicationServiceImpl) {
-	mux.HandleFunc("GET "+prefix+"/dbutil/:st", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET "+prefix+"/dbutil/{st}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
 		st := r.PathValue("st")
-		l := r.URL.Query().Get("l")
-		filter := r.URL.Query().Get("default-filter")
+		last := r.URL.Query().Get("l")
+		filter := r.URL.Query().Get("filter")
 		f, err := utility.ConvertQueryStringToDefaultFilter(filter)
 		if err != nil {
 			log.Println(err.Error())
@@ -31,7 +34,7 @@ func LoadSharedRouter(mux *http.ServeMux, prefix string, service *dbutil.Applica
 			return
 		}
 
-		result, err := service.Get(st, f, l)
+		result, err := service.GetMany(st, f, last)
 		if err != nil {
 			log.Println(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
@@ -43,7 +46,7 @@ func LoadSharedRouter(mux *http.ServeMux, prefix string, service *dbutil.Applica
 		json.NewEncoder(w).Encode(result)
 	})
 
-	mux.HandleFunc("POST "+prefix+"/dbutil/:st", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST "+prefix+"/dbutil/{st}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		st := r.PathValue("st")
 
@@ -65,7 +68,7 @@ func LoadSharedRouter(mux *http.ServeMux, prefix string, service *dbutil.Applica
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"target":   "about:blank",
 			"title":    "",
