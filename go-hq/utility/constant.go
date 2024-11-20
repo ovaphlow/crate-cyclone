@@ -55,6 +55,20 @@ func parseFilterConditions(filter []string) ([][]string, error) {
 		}
 		v := filter[2 : 2+c]
 		return [][]string{append([]string{"in"}, v...)}, nil
+	} else if filter[0] == "like" {
+		c, err := strconv.Atoi(filter[1])
+		if err != nil {
+			return nil, err
+		}
+		if c%2 != 0 {
+			return nil, fmt.Errorf("参数数量错误")
+		}
+
+		var result [][]string
+		for i := 0; i < c; i += 2 {
+			result = append(result, []string{"like", filter[2+i], filter[3+i]})
+		}
+		return result, nil
 	} else if filter[0] == "array-contain" {
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
@@ -79,7 +93,7 @@ func parseFilterConditions(filter []string) ([][]string, error) {
 //   - qs (string): 原始查询字符串。
 //
 // 返回:
-//   - ([][]string, error): 解析后的过滤条件切片或解析失败时的错误。
+//   - ([][]string, error): 解析后的过滤��件切片或解析失败时的错误。
 func ConvertQueryStringToDefaultFilter(qs string) ([][]string, error) {
 	result := [][]string{}
 	if qs == "" {

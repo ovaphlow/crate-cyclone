@@ -53,7 +53,7 @@ type SharedRepo interface {
 	// Create 插入一条新记录到指定的表。
 	// 参数：
 	// - st：schema 和表，格式如 "schema.table"
-	// - d：要插入的数据
+	// - d：要插入的数���
 	// 返回值：
 	// - error：错误信息
 	Create(st string, d map[string]interface{}) error
@@ -449,6 +449,9 @@ func (r *SharedRepoImplMySQL) Get(st string, c []string, f [][]string, l string)
 			for _, v := range condition[2:] {
 				params = append(params, v)
 			}
+		case "like":
+			whereClauses = append(whereClauses, fmt.Sprintf("POSITION(? IN %s) > 0", field))
+			params = append(params, condition[2])
 		case "greater":
 			whereClauses = append(whereClauses, fmt.Sprintf("%s > ?", field))
 			params = append(params, condition[2])
