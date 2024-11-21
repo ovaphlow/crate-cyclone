@@ -69,6 +69,62 @@ func parseFilterConditions(filter []string) ([][]string, error) {
 			result = append(result, []string{"like", filter[2+i], filter[3+i]})
 		}
 		return result, nil
+	} else if filter[0] == "greater-equal" {
+		c, err := strconv.Atoi(filter[1])
+		if err != nil {
+			return nil, err
+		}
+		if c%2 != 0 {
+			return nil, fmt.Errorf("参数数量错误")
+		}
+
+		var result [][]string
+		for i := 0; i < c; i += 2 {
+			result = append(result, []string{"greater-equal", filter[2+i], filter[3+i]})
+		}
+		return result, nil
+	} else if filter[0] == "less-equal" {
+		c, err := strconv.Atoi(filter[1])
+		if err != nil {
+			return nil, err
+		}
+		if c%2 != 0 {
+			return nil, fmt.Errorf("参数数量错误")
+		}
+
+		var result [][]string
+		for i := 0; i < c; i += 2 {
+			result = append(result, []string{"less-equal", filter[2+i], filter[3+i]})
+		}
+		return result, nil
+	} else if filter[0] == "greater" {
+		c, err := strconv.Atoi(filter[1])
+		if err != nil {
+			return nil, err
+		}
+		if c%2 != 0 {
+			return nil, fmt.Errorf("参数数量错误")
+		}
+
+		var result [][]string
+		for i := 0; i < c; i += 2 {
+			result = append(result, []string{"greater", filter[2+i], filter[3+i]})
+		}
+		return result, nil
+	} else if filter[0] == "less" {
+		c, err := strconv.Atoi(filter[1])
+		if err != nil {
+			return nil, err
+		}
+		if c%2 != 0 {
+			return nil, fmt.Errorf("参数数量错误")
+		}
+
+		var result [][]string
+		for i := 0; i < c; i += 2 {
+			result = append(result, []string{"less", filter[2+i], filter[3+i]})
+		}
+		return result, nil
 	} else if filter[0] == "array-contain" {
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {

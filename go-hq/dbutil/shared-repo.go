@@ -480,12 +480,14 @@ func (r *SharedRepoImplMySQL) Get(st string, c []string, f [][]string, l string)
 		q += " " + l
 	}
 
+	log.Println(q)
 	stmt, err := r.db.Prepare(q)
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
 
+	log.Println(params)
 	rows, err := stmt.Query(params...)
 	if err != nil {
 		return nil, err
