@@ -48,6 +48,20 @@ func parseFilterConditions(filter []string) ([][]string, error) {
 			result = append(result, []string{"equal", filter[2+i], filter[3+i]})
 		}
 		return result, nil
+	} else if filter[0] == "not-equal" {
+		c, err := strconv.Atoi(filter[1])
+		if err != nil {
+			return nil, err
+		}
+		if c%2 != 0 {
+			return nil, fmt.Errorf("参数数量错误")
+		}
+
+		var result [][]string
+		for i := 0; i < c; i += 2 {
+			result = append(result, []string{"not-equal", filter[2+i], filter[3+i]})
+		}
+		return result, nil
 	} else if filter[0] == "in" {
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
