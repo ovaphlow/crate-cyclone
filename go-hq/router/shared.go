@@ -72,7 +72,7 @@ func LoadSharedRouter(mux *http.ServeMux, prefix string, service *dbutil.Applica
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"target":   "about:blank",
 			"title":    "",
-			"status":   200,
+			"status":   201,
 			"detail":   "",
 			"instance": "",
 		})
