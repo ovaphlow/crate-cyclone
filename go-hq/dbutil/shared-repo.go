@@ -3,6 +3,7 @@ package dbutil
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -295,25 +296,24 @@ func (r *SharedRepoImpl) Update(st string, d map[string]interface{}, w string) e
 
 	q := fmt.Sprintf("update %s set ", st)
 	var values []string
+	var p []interface{}
 	for _, v := range columns {
 		if _, ok := d[v]; ok {
 			values = append(values, fmt.Sprintf("%s = $%d", v, len(values)+1))
+			p = append(p, d[v])
 		}
 	}
 	q += strings.Join(values, ", ")
 	q += " where " + w
 
-	p := make([]interface{}, len(values))
-	for i, v := range values {
-		p[i] = v
-	}
-
+	log.Println(q)
 	stmt, err := r.db.Prepare(q)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
+	log.Println(p)
 	_, err = stmt.Exec(p...)
 	if err != nil {
 		return err

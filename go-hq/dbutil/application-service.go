@@ -110,7 +110,7 @@ func (s *ApplicationServiceImpl) Get(st string, f [][]string, l string) (map[str
 //   - deprecated: 是否标记数据弃用。
 //
 // 返回值:
-//   - error: 如果更新失败，返��相应的错误。
+//   - error: 如果更新失败，返回相应的错误。
 func (s *ApplicationServiceImpl) Update(st string, d map[string]interface{}, w string, deprecated bool) error {
 	id, ok := d["id"].(string)
 	if !ok {
@@ -150,7 +150,7 @@ func (s *ApplicationServiceImpl) Update(st string, d map[string]interface{}, w s
 //   - w: 移除条件。
 //
 // 返回值:
-//   - error: 如果移除失败，返回相应��错误。
+//   - error: 如果移除失败，返回相应的错误。
 func (s *ApplicationServiceImpl) Remove(st string, w string) error {
 	return s.repo.Remove(st, w)
 }

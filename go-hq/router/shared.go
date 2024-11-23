@@ -19,6 +19,61 @@ import (
 // 返回值:
 //   - 无
 func LoadSharedRouter(mux *http.ServeMux, prefix string, service *dbutil.ApplicationServiceImpl) {
+	mux.HandleFunc("DELETE "+prefix+"/dbutil/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		st := r.PathValue("st")
+		id := r.PathValue("id")
+
+		err := service.Remove(st, "id='"+id+"'")
+		if err != nil {
+			log.Println(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			response := utility.CreateHTTPResponseRFC9457("删除失败", http.StatusInternalServerError, r)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		response := utility.CreateHTTPResponseRFC9457("删除成功", http.StatusOK, r)
+		json.NewEncoder(w).Encode(response)
+	})
+
+	mux.HandleFunc("PUT "+prefix+"/dbutil/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		st := r.PathValue("st")
+		id := r.PathValue("id")
+		d := r.URL.Query().Get("d")
+
+		var data map[string]interface{}
+		if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+			log.Println(err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			response := utility.CreateHTTPResponseRFC9457("无效的请求体", http.StatusBadRequest, r)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		data["id"] = id
+
+		deprecated := false
+		if d == "1" || d == "true" {
+			deprecated = true
+		}
+		err := service.Update(st, data, "id='"+id+"'", deprecated)
+		if err != nil {
+			log.Println(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			response := utility.CreateHTTPResponseRFC9457("更新失败", http.StatusInternalServerError, r)
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		response := utility.CreateHTTPResponseRFC9457("更新成功", http.StatusOK, r)
+		json.NewEncoder(w).Encode(response)
+	})
+
 	mux.HandleFunc("GET "+prefix+"/dbutil/{st}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
