@@ -24,7 +24,7 @@ func LoadSharedRouter(mux *http.ServeMux, prefix string, service *dbutil.Applica
 
 		st := r.PathValue("st")
 		last := r.URL.Query().Get("l")
-		filter := r.URL.Query().Get("filter")
+		filter := r.URL.Query().Get("f")
 		f, err := utility.ConvertQueryStringToDefaultFilter(filter)
 		if err != nil {
 			log.Println(err.Error())

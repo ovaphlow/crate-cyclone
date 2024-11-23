@@ -3,7 +3,6 @@ package dbutil
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"reflect"
 	"strconv"
 	"strings"
@@ -230,7 +229,6 @@ func (r *SharedRepoImpl) Get(st string, c []string, f [][]string, l string) ([]m
 	if l != "" {
 		q += " " + l
 	}
-	log.Println(q)
 
 	stmt, err := r.db.Prepare(q)
 	if err != nil {
@@ -309,8 +307,6 @@ func (r *SharedRepoImpl) Update(st string, d map[string]interface{}, w string) e
 	for i, v := range values {
 		p[i] = v
 	}
-
-	log.Println(q)
 
 	stmt, err := r.db.Prepare(q)
 	if err != nil {
@@ -498,14 +494,12 @@ func (r *SharedRepoImplMySQL) Get(st string, c []string, f [][]string, l string)
 		q += " " + l
 	}
 
-	log.Println(q)
 	stmt, err := r.db.Prepare(q)
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
 
-	log.Println(params)
 	rows, err := stmt.Query(params...)
 	if err != nil {
 		return nil, err
