@@ -8,16 +8,16 @@ import (
 	"ovaphlow/crate/hq/utility"
 )
 
-// LoadSharedRouter 设置 GET 和 POST 路由。
-// 该函数加载共享路由并配置 GET 和 POST 请求的处理程序。
+// LoadSharedRouter 加载路由
 //
 // 参数:
-//   - mux: 用于注册路由和处理程序的 HTTP 请求多路复用器。
-//   - prefix: 定义路由基本路径的路由前缀。
-//   - service: 用于处理业务逻辑的应用服务实例。
+//   - mux: HTTP请求多路复用器
+//   - prefix: 路由前缀
+//   - service: 数据库服务实现
 //
 // 返回值:
-//   - 无
+//
+//	无
 func LoadSharedRouter(mux *http.ServeMux, prefix string, service *dbutil.ApplicationServiceImpl) {
 	mux.HandleFunc("DELETE "+prefix+"/dbutil/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
