@@ -244,24 +244,42 @@ func (r *SharedRepoImpl) Get(st string, c []string, f [][]string, l string) ([]m
 	}
 	defer rows.Close()
 
-	results := []map[string]interface{}{}
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	var result []map[string]interface{}
+	values := make([]interface{}, len(columns))
+	valuePtrs := make([]interface{}, len(columns))
 	for rows.Next() {
-		row := make(map[string]interface{})
-		columns := make([]interface{}, len(c))
-		columnPointers := make([]interface{}, len(c))
 		for i := range columns {
-			columnPointers[i] = &columns[i]
+			valuePtrs[i] = &values[i]
 		}
-		if err := rows.Scan(columnPointers...); err != nil {
+		if err := rows.Scan(valuePtrs...); err != nil {
 			return nil, err
 		}
-		for i, colName := range c {
-			row[colName] = columns[i]
+		m := make(map[string]interface{})
+		for i, col := range columns {
+			val := values[i]
+			if val == nil {
+				m[col] = nil
+			} else {
+				switch v := val.(type) {
+				case []byte:
+					m[col] = string(v)
+				case int, int8, int16, int32, int64:
+					m[col] = strconv.FormatInt(reflect.ValueOf(v).Int(), 10)
+				case uint, uint8, uint16, uint32, uint64:
+					m[col] = strconv.FormatUint(reflect.ValueOf(v).Uint(), 10)
+				default:
+					m[col] = v
+				}
+			}
 		}
-		results = append(results, row)
+		result = append(result, m)
 	}
 
-	return results, nil
+	return result, nil
 }
 
 // Update 根据条件修改指定表中的记录。

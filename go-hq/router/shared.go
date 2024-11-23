@@ -69,12 +69,7 @@ func LoadSharedRouter(mux *http.ServeMux, prefix string, service *dbutil.Applica
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"target":   "about:blank",
-			"title":    "",
-			"status":   201,
-			"detail":   "",
-			"instance": "",
-		})
+		response := utility.CreateHTTPResponseRFC9457("创建成功", http.StatusCreated, r)
+		json.NewEncoder(w).Encode(response)
 	})
 }
