@@ -163,7 +163,7 @@ func parseFilterConditions(filter []string) ([][]string, error) {
 //   - qs (string): 原始查询字符串。
 //
 // 返回:
-//   - ([][]string, error): 解析后的过滤��件切片或解析失败时的错误。
+//   - ([][]string, error): 解析后的过滤条件切片或解析失败时的错误。
 func ConvertQueryStringToDefaultFilter(qs string) ([][]string, error) {
 	result := [][]string{}
 	if qs == "" {
