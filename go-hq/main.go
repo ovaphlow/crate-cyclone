@@ -106,18 +106,18 @@ func main() {
 
 	// 初始化数据库连接并创建共享资源仓库
 	databaseType := os.Getenv("DATABASE_TYPE")
-	var sharedRepo dbutil.SharedRepo
+	var rdbRepo dbutil.RDBRepo
 	if databaseType == "postgres" {
-		sharedRepo = dbutil.NewSharedRepo(utility.Postgres)
+		rdbRepo = dbutil.NewPostgresRepo(utility.Postgres)
 	} else if databaseType == "mysql" {
-		sharedRepo = dbutil.NewSharedRepoMySQL(utility.MySQL)
+		rdbRepo = dbutil.NewMySQLRepo(utility.MySQL)
 	} else {
 		log.Fatal("Unsupported DATABASE_TYPE")
 	}
 
 	// 创建应用服务并加载共享路由
-	appService := dbutil.NewApplicationService(sharedRepo)
-	router.LoadSharedRouter(mux, "/cyclone-api", appService)
+	appService := dbutil.NewApplicationService(rdbRepo)
+	router.LoadRDBUtilRouter(mux, "/cyclone-api", appService)
 
 	// 获取端口号并启动HTTP服务器
 	port := os.Getenv("PORT")

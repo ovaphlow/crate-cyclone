@@ -18,8 +18,8 @@ import (
 // 返回值:
 //
 //	无
-func LoadSharedRouter(mux *http.ServeMux, prefix string, service *dbutil.ApplicationServiceImpl) {
-	mux.HandleFunc("DELETE "+prefix+"/dbutil/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
+func LoadRDBUtilRouter(mux *http.ServeMux, prefix string, service *dbutil.ApplicationServiceImpl) {
+	mux.HandleFunc("DELETE "+prefix+"/rdb-util/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
 		st := r.PathValue("st")
@@ -39,7 +39,7 @@ func LoadSharedRouter(mux *http.ServeMux, prefix string, service *dbutil.Applica
 		json.NewEncoder(w).Encode(response)
 	})
 
-	mux.HandleFunc("PUT "+prefix+"/dbutil/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("PUT "+prefix+"/rdb-util/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
 		st := r.PathValue("st")
@@ -74,7 +74,7 @@ func LoadSharedRouter(mux *http.ServeMux, prefix string, service *dbutil.Applica
 		json.NewEncoder(w).Encode(response)
 	})
 
-	mux.HandleFunc("GET "+prefix+"/dbutil/{st}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET "+prefix+"/rdb-util/{st}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
 		st := r.PathValue("st")
@@ -101,7 +101,7 @@ func LoadSharedRouter(mux *http.ServeMux, prefix string, service *dbutil.Applica
 		json.NewEncoder(w).Encode(result)
 	})
 
-	mux.HandleFunc("POST "+prefix+"/dbutil/{st}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST "+prefix+"/rdb-util/{st}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		st := r.PathValue("st")
 

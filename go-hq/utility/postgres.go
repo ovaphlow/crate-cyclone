@@ -17,7 +17,7 @@ var Postgres *sql.DB
 func InitPostgres() {
 	err := godotenv.Load()
 	if err != nil {
-		Slogger.Error("加载环境变量失败")
+		Slogger.Error("环境变量未设置 Postgres")
 		log.Fatal(err.Error())
 	}
 	user := os.Getenv("POSTGRES_USER")
@@ -40,8 +40,8 @@ func InitPostgres() {
 	Postgres.SetConnMaxLifetime(time.Second * 30)
 	Postgres.SetMaxIdleConns(runtime.NumCPU()*2 + 1)
 	if err = Postgres.Ping(); err != nil {
-		log.Println("连接数据库失败")
+		log.Println("连接数据库失败 Postgres")
 		log.Fatal(err.Error())
 	}
-	log.Println("连接数据库成功")
+	log.Println("连接数据库成功 Postgres")
 }

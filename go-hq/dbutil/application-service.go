@@ -17,11 +17,11 @@ type ApplicationService interface {
 
 // ApplicationServiceImpl 实现了 ApplicationService 接口。
 type ApplicationServiceImpl struct {
-	repo SharedRepo
+	repo RDBRepo
 }
 
 // NewApplicationService 创建一个新的 ApplicationServiceImpl 实例。
-func NewApplicationService(repo SharedRepo) *ApplicationServiceImpl {
+func NewApplicationService(repo RDBRepo) *ApplicationServiceImpl {
 	return &ApplicationServiceImpl{repo: repo}
 }
 

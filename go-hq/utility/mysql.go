@@ -16,7 +16,7 @@ var MySQL *sql.DB
 func InitMySQL() {
 	err := godotenv.Load()
 	if err != nil {
-		Slogger.Error("加载环境变量失败")
+		Slogger.Error("环境变量未设置 MySQL")
 		log.Fatal(err.Error())
 	}
 	user := os.Getenv("MYSQL_USER")
@@ -40,8 +40,8 @@ func InitMySQL() {
 	MySQL.SetMaxOpenConns(10)
 	MySQL.SetMaxIdleConns(10)
 	if err = MySQL.Ping(); err != nil {
-		log.Println("连接MySQL数据库失败")
+		log.Println("连接数据库失败 MySQL")
 		log.Fatal(err.Error())
 	}
-	log.Println("连接MySQL数据库成功")
+	log.Println("连接数据库成功 MySQL")
 }

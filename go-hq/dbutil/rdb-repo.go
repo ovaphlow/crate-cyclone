@@ -49,11 +49,11 @@ func get_columns(db *sql.DB, sat string) ([]string, error) {
 	return columns, nil
 }
 
-type SharedRepo interface {
+type RDBRepo interface {
 	// Create 插入一条新记录到指定的表。
 	// 参数：
 	// - st：schema 和表，格式如 "schema.table"
-	// - d：要插入的数���
+	// - d：要插入的数据
 	// 返回值：
 	// - error：错误信息
 	Create(st string, d map[string]interface{}) error
@@ -76,7 +76,7 @@ type SharedRepo interface {
 	// - error：错误信息
 	Update(st string, d map[string]interface{}, w string) error
 	// Remove 根据条件删除指定表中的记录。
-	// 参数：
+	// ��数：
 	// - st：schema 和表，格式如 "schema.table"
 	// - w：WHERE 条件，例如 "id='1a'"
 	// 返回值：
@@ -84,17 +84,17 @@ type SharedRepo interface {
 	Remove(st string, w string) error
 }
 
-type SharedRepoImpl struct {
+type PostgresRepoImpl struct {
 	db *sql.DB
 }
 
-// NewSharedRepo 创建一个新的 SharedRepoImpl 实例。
+// NewPostgresRepo 创建一个新的 PostgresRepoImpl 实例。
 // 参数：
 // - db：数据库连接
 // 返回值：
-// - *SharedRepoImpl：SharedRepoImpl 实例
-func NewSharedRepo(db *sql.DB) *SharedRepoImpl {
-	return &SharedRepoImpl{db: db}
+// - *PostgresRepoImpl：PostgresRepoImpl 实例
+func NewPostgresRepo(db *sql.DB) *PostgresRepoImpl {
+	return &PostgresRepoImpl{db: db}
 }
 
 // Create 插入一条新记录到指定的表。
@@ -103,7 +103,7 @@ func NewSharedRepo(db *sql.DB) *SharedRepoImpl {
 // - d：要插入的数据
 // 返回值：
 // - error：错误信息
-func (r *SharedRepoImpl) Create(st string, d map[string]interface{}) error {
+func (r *PostgresRepoImpl) Create(st string, d map[string]interface{}) error {
 	columns, err := get_columns(r.db, st)
 	if err != nil {
 		return err
@@ -151,7 +151,7 @@ func (r *SharedRepoImpl) Create(st string, d map[string]interface{}) error {
 // 返回值：
 // - []map[string]interface{}：检索到的记录
 // - error：错误信息
-func (r *SharedRepoImpl) Get(st string, c []string, f [][]string, l string) ([]map[string]interface{}, error) {
+func (r *PostgresRepoImpl) Get(st string, c []string, f [][]string, l string) ([]map[string]interface{}, error) {
 	if len(c) == 0 {
 		var err error
 		c, err = get_columns(r.db, st)
@@ -288,7 +288,7 @@ func (r *SharedRepoImpl) Get(st string, c []string, f [][]string, l string) ([]m
 // - w：WHERE 条件，例如 "id='1a'"
 // 返回值：
 // - error：错误信息
-func (r *SharedRepoImpl) Update(st string, d map[string]interface{}, w string) error {
+func (r *PostgresRepoImpl) Update(st string, d map[string]interface{}, w string) error {
 	columns, err := get_columns(r.db, st)
 	if err != nil {
 		return err
@@ -328,7 +328,7 @@ func (r *SharedRepoImpl) Update(st string, d map[string]interface{}, w string) e
 // - w：WHERE 条件，例如 "id='1a'"
 // 返回值：
 // - error：错误信息
-func (r *SharedRepoImpl) Remove(st string, w string) error {
+func (r *PostgresRepoImpl) Remove(st string, w string) error {
 	q := fmt.Sprintf("delete from %s where %s", st, w)
 	stmt, err := r.db.Prepare(q)
 	if err != nil {
@@ -369,17 +369,17 @@ func get_columns_mysql(db *sql.DB, st string) ([]string, error) {
 	return columns, nil
 }
 
-type SharedRepoImplMySQL struct {
+type MySQLRepoImpl struct {
 	db *sql.DB
 }
 
-// NewSharedRepoMySQL 创建一个新的 SharedRepoImplMySQL 实例。
+// NewMySQLRepo 创建一个新的 MySQLRepoImpl 实例。
 // 参数：
 // - db：数据库连接
 // 返回值：
-// - *SharedRepoImplMySQL：SharedRepoImplMySQL 实例
-func NewSharedRepoMySQL(db *sql.DB) *SharedRepoImplMySQL {
-	return &SharedRepoImplMySQL{db: db}
+// - *MySQLRepoImpl：MySQLRepoImpl 实例
+func NewMySQLRepo(db *sql.DB) *MySQLRepoImpl {
+	return &MySQLRepoImpl{db: db}
 }
 
 // Create 插入一条新记录到指定的表（MySQL）。
@@ -388,7 +388,7 @@ func NewSharedRepoMySQL(db *sql.DB) *SharedRepoImplMySQL {
 // - d：要插入的数据
 // 返回值：
 // - error：错误信息
-func (r *SharedRepoImplMySQL) Create(st string, d map[string]interface{}) error {
+func (r *MySQLRepoImpl) Create(st string, d map[string]interface{}) error {
 	columns, err := get_columns(r.db, st)
 	if err != nil {
 		return err
@@ -423,7 +423,7 @@ func (r *SharedRepoImplMySQL) Create(st string, d map[string]interface{}) error 
 // 返回值：
 // - []map[string]interface{}：检索到的记录
 // - error：错误信息
-func (r *SharedRepoImplMySQL) Get(st string, c []string, f [][]string, l string) ([]map[string]interface{}, error) {
+func (r *MySQLRepoImpl) Get(st string, c []string, f [][]string, l string) ([]map[string]interface{}, error) {
 	if len(c) == 0 {
 		var err error
 		c, err = get_columns_mysql(r.db, st)
@@ -553,7 +553,7 @@ func (r *SharedRepoImplMySQL) Get(st string, c []string, f [][]string, l string)
 // - w：WHERE 条件，例如 "id='1a'"
 // 返回值：
 // - error：错误信息
-func (r *SharedRepoImplMySQL) Update(st string, d map[string]interface{}, w string) error {
+func (r *MySQLRepoImpl) Update(st string, d map[string]interface{}, w string) error {
 	columns, err := get_columns_mysql(r.db, st)
 	if err != nil {
 		return err
@@ -587,7 +587,7 @@ func (r *SharedRepoImplMySQL) Update(st string, d map[string]interface{}, w stri
 // - w：WHERE 条件，例如 "id='1a'"
 // 返回值：
 // - error：错误信息
-func (r *SharedRepoImplMySQL) Remove(st string, w string) error {
+func (r *MySQLRepoImpl) Remove(st string, w string) error {
 	q := fmt.Sprintf("DELETE FROM %s WHERE %s", st, w)
 	stmt, err := r.db.Prepare(q)
 	if err != nil {
