@@ -39,47 +39,6 @@ func get_columns_sqlite(db *sql.DB, sat string) ([]string, error) {
 	return columns, nil
 }
 
-// EDBRepo defines the interface for database operations.
-type EDBRepo interface {
-	// Create inserts a new record into the specified table.
-	// Parameters:
-	// - st: The name of the table.
-	// - d: A map of column names to values.
-	// Returns:
-	// - An error if the operation fails.
-	Create(st string, d map[string]interface{}) error
-
-	// Get retrieves records from the specified table.
-	// Parameters:
-	// - st: The name of the table.
-	// - c: A slice of column names to retrieve.
-	// - f: A slice of filter conditions.
-	// - l: Additional SQL clauses (e.g., ORDER BY).
-	// Returns:
-	// - A slice of maps representing the retrieved records.
-	// - An error if the operation fails.
-	Get(st string, c []string, f [][]string, l string) ([]map[string]interface{}, error)
-
-	// Update modifies existing records in the specified table.
-	// Parameters:
-	// - st: The name of the table.
-	// - d: A map of column names to new values.
-	// - w: The WHERE clause to specify which records to update.
-	// - deprecated: A boolean flag for deprecated usage.
-	// Returns:
-	// - An error if the operation fails.
-	Update(st string, d map[string]interface{}, w string, deprecated bool) error
-
-	// Remove deletes records from the specified table.
-	// Parameters:
-	// - st: The name of the table.
-	// - w: The WHERE clause to specify which records to delete.
-	// Returns:
-	// - An error if the operation fails.
-	Remove(st string, w string) error
-}
-
-// SQLiteRepoImpl is an implementation of the EDBRepo interface for SQLite.
 type SQLiteRepoImpl struct {
 	db *sql.DB
 }
@@ -261,7 +220,7 @@ func (r *SQLiteRepoImpl) Get(st string, c []string, f [][]string, l string) ([]m
 // - deprecated: A boolean flag for deprecated usage.
 // Returns:
 // - An error if the operation fails.
-func (r *SQLiteRepoImpl) Update(st string, d map[string]interface{}, w string, deprecated bool) error {
+func (r *SQLiteRepoImpl) Update(st string, d map[string]interface{}, w string) error {
 	columns, err := get_columns_sqlite(r.db, st)
 	if err != nil {
 		return err

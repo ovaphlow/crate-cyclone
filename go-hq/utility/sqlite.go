@@ -6,18 +6,24 @@ import (
 	"log"
 	"os"
 
+	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var SQLite *sql.DB
 
-func init() {
+func InitSQLite() {
+	err := godotenv.Load()
+	if err != nil {
+		Slogger.Error("环境变量未设置 SQLite")
+		log.Fatal(err.Error())
+	}
+
 	dsn := os.Getenv("SQLITE_DATABASE")
 	if dsn == "" {
 		log.Fatal(errors.New("环境变量未设置 SQLite"))
 	}
 
-	var err error
 	SQLite, err = sql.Open("sqlite3", dsn)
 	if err != nil {
 		log.Fatal(err)

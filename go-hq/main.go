@@ -37,6 +37,11 @@ func init() {
 	} else {
 		log.Panic("未设置数据库")
 	}
+
+	edb := os.Getenv("EDB_ENABLED")
+	if edb == "true" || edb == "1" {
+		utility.InitSQLite()
+	}
 }
 
 type Middleware func(http.Handler) http.Handler
@@ -118,6 +123,13 @@ func main() {
 	// 创建应用服务并加载共享路由
 	appService := dbutil.NewApplicationService(rdbRepo)
 	router.LoadRDBUtilRouter(mux, "/cyclone-api", appService)
+
+	edb := os.Getenv("EDB_ENABLED")
+	if edb == "true" || edb == "1" {
+		edbRepo := dbutil.NewSQLiteRepo(utility.SQLite)
+		edbService := dbutil.NewApplicationService(edbRepo)
+		router.LoadEDBUtilRouter(mux, "/cyclone-api", edbService)
+	}
 
 	// 获取端口号并启动HTTP服务器
 	port := os.Getenv("PORT")
