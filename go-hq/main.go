@@ -111,7 +111,7 @@ func main() {
 
 	// 初始化数据库连接并创建共享资源仓库
 	databaseType := os.Getenv("DATABASE_TYPE")
-	var rdbRepo dbutil.RDBRepo
+	var rdbRepo dbutil.Repo
 	if databaseType == "postgres" {
 		rdbRepo = dbutil.NewPostgresRepo(utility.Postgres)
 	} else if databaseType == "mysql" {
