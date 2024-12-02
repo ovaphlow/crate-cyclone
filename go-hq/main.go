@@ -1,6 +1,6 @@
 package main
 
-// 导入必要的包
+// Import necessary packages
 import (
 	"log"
 	"net/http"
@@ -19,40 +19,50 @@ import (
 )
 
 func init() {
-	// 加载环境变量文件
+	// Load environment variables file
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	// 初始化结构化日志
+	// Initialize structured logging
 	utility.InitSlog()
 
-	// 根据环境变量初始化对应的数据库
-	databaseType := os.Getenv("DATABASE_TYPE")
-	if databaseType == "postgres" {
-		utility.InitPostgres()
-	} else if databaseType == "mysql" {
-		utility.InitMySQL()
+	// Initialize the corresponding database based on environment variables
+	database_type := os.Getenv("DATABASE_TYPE")
+	if database_type == "posgres" {
+		user := os.Getenv("POSTGRES_USER")
+		password := os.Getenv("POSTGRES_PASSWORD")
+		host := os.Getenv("POSTGRES_HOST")
+		port := os.Getenv("POSTGRES_PORT")
+		database := os.Getenv("POSTGRES_DATABASE")
+		utility.InitPostgres(user, password, host, port, database)
+	} else if database_type == "mysql" {
+		user := os.Getenv("MYSQL_USER")
+		password := os.Getenv("MYSQL_PASSWORD")
+		host := os.Getenv("MYSQL_HOST")
+		port := os.Getenv("MYSQL_PORT")
+		database := os.Getenv("MYSQL_DATABASE")
+		utility.InitMySQL(user, password, host, port, database)
 	} else {
-		log.Panic("未设置数据库")
+		log.Fatal("未设置数据库类型 DATABASE_TYPE")
 	}
 
-	edb := os.Getenv("SQLITE_ENABLED")
-	if edb == "true" || edb == "1" {
+	sqlite := os.Getenv("SQLITE_ENABLED")
+	if sqlite == "true" {
 		utility.InitSQLite()
 	}
 }
 
 type Middleware func(http.Handler) http.Handler
 
-// applyMiddlewares 将给定的中间件应用到一个 HTTP 处理器上。
-// 参数:
-//   - h: 初始的 http.Handler，后续中间件将应用到它上面。
-//   - middlewares: 可变参数列表的 Middleware 函数，依次应用。
+// applyMiddlewares applies the given middlewares to an HTTP handler.
+// Parameters:
+//   - h: The initial http.Handler to which the subsequent middlewares will be applied.
+//   - middlewares: Variadic parameter list of Middleware functions to be applied in sequence.
 //
-// 返回值:
-//   - 应用了所有中间件的 http.Handler。
+// Returns:
+//   - An http.Handler with all middlewares applied.
 func applyMiddlewares(h http.Handler, middlewares ...Middleware) http.Handler {
 	for _, middleware := range middlewares {
 		h = middleware(h)
@@ -61,27 +71,27 @@ func applyMiddlewares(h http.Handler, middlewares ...Middleware) http.Handler {
 }
 
 func main() {
-	// 创建一个新的ServeMux
+	// Create a new ServeMux
 	mux := http.NewServeMux()
 
-	// 定义Ping路由，返回"pong"
+	// Define Ping route, returns "pong"
 	mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("pong"))
 	})
 
-	// 应用多个中间件到mux
+	// Apply multiple middlewares to mux
 	handler := applyMiddlewares(mux, middleware.APIVersionMiddleware, middleware.CORSMiddleware, middleware.SecurityHeadersMiddleware)
 	log.Println("中间件已加载")
 
-	// 设置静态文件服务，路径为 /html
+	// Set up static file service, path is /html
 	fs := http.FileServer(http.Dir("./html"))
 	mux.Handle("/html/", http.StripPrefix("/html", fs))
 	log.Println("静态文件服务已加载至 /html")
 
-	// 注册服务路由
+	// Register service routes
 	router.RegisterServiceRouter(mux)
 
-	// 设置动态代理路由
+	// Set up dynamic proxy route
 	mux.HandleFunc("/proxy/", func(w http.ResponseWriter, r *http.Request) {
 		target := determinTarget(r)
 		remote, err := url.Parse(target)
@@ -99,7 +109,7 @@ func main() {
 		proxy.ServeHTTP(w, r)
 	})
 
-	// 设置定时健康检查，每15秒执行一次
+	// Set up periodic health check, executed every 15 seconds
 	sec := 15
 	duration := time.Duration(sec) * time.Second
 	ticker := time.NewTicker(duration)
@@ -109,7 +119,7 @@ func main() {
 		}
 	}()
 
-	// 初始化数据库连接并创建共享资源仓库
+	// Initialize database connection and create shared resource repository
 	databaseType := os.Getenv("DATABASE_TYPE")
 	var rdbRepo dbutil.Repo
 	if databaseType == "postgres" {
@@ -120,18 +130,18 @@ func main() {
 		log.Fatal("Unsupported DATABASE_TYPE")
 	}
 
-	// 创建应用服务并加载共享路由
+	// Create application service and load shared routes
 	appService := dbutil.NewApplicationService(rdbRepo)
 	router.LoadRDBUtilRouter(mux, "/cyclone-api", appService)
 
-	edb := os.Getenv("EDB_ENABLED")
-	if edb == "true" || edb == "1" {
+	edb := os.Getenv("SQLITE_ENABLED")
+	if edb == "true" {
 		edbRepo := dbutil.NewSQLiteRepo(utility.SQLite)
 		edbService := dbutil.NewApplicationService(edbRepo)
 		router.LoadEDBUtilRouter(mux, "/cyclone-api", edbService)
 	}
 
-	// 获取端口号并启动HTTP服务器
+	// Get port number and start HTTP server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8421"
@@ -140,7 +150,7 @@ func main() {
 	log.Fatal(http.ListenAndServe("0.0.0.0:"+port, handler))
 }
 
-// 根据请求决定目标服务的地址
+// determineTarget decides the target service address based on the request
 func determinTarget(r *http.Request) string {
 	for _, service := range router.ServiceList {
 		if strings.HasPrefix(r.URL.Path, "/proxy/"+service.Name) {
