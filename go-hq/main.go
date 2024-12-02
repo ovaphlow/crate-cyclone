@@ -38,7 +38,7 @@ func init() {
 		log.Panic("未设置数据库")
 	}
 
-	edb := os.Getenv("EDB_ENABLED")
+	edb := os.Getenv("SQLITE_ENABLED")
 	if edb == "true" || edb == "1" {
 		utility.InitSQLite()
 	}
