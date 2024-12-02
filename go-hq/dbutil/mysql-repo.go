@@ -40,21 +40,25 @@ type MySQLRepoImpl struct {
 	db *sql.DB
 }
 
-// NewMySQLRepo 创建一个新的 MySQLRepoImpl 实例。
-// 参数：
-// - db：数据库连接
-// 返回值：
-// - *MySQLRepoImpl：MySQLRepoImpl 实例
+// NewMySQLRepo creates a new MySQLRepoImpl instance.
+//
+// Parameters:
+//   - db: database connection
+//
+// Returns:
+//   - *MySQLRepoImpl: MySQLRepoImpl instance
 func NewMySQLRepo(db *sql.DB) *MySQLRepoImpl {
 	return &MySQLRepoImpl{db: db}
 }
 
-// Create 插入一条新记录到指定的表（MySQL）。
-// 参数：
-// - st：schema 和表，格式如 "schema.table"
-// - d：要插入的数据
-// 返回值：
-// - error：错误信息
+// Create inserts a new record into the specified table (MySQL).
+//
+// Parameters:
+//   - st: schema and table, format like "schema.table"
+//   - d: data to be inserted
+//
+// Returns:
+//   - error: error information
 func (r *MySQLRepoImpl) Create(st string, d map[string]interface{}) error {
 	columns, err := get_columns_mysql(r.db, st)
 	if err != nil {
@@ -81,15 +85,17 @@ func (r *MySQLRepoImpl) Create(st string, d map[string]interface{}) error {
 	return err
 }
 
-// Get 根据条件从指定的表中检索记录。
-// 参数：
-// - st：schema 和表，格式如 "schema.table"
-// - c：要检索的列，例如 ["id", "name"]
-// - f：过滤条件，例如 [["equal", "name", "John Doe"], ["in", "id", "1a", "1b"]]
-// - l：附加子句，例如 "order by id desc limit 20 offset 0"
-// 返回值：
-// - []map[string]interface{}：检索到的记录
-// - error：错误信息
+// Get retrieves records from the specified table based on conditions.
+//
+// Parameters:
+//   - st: schema and table, format like "schema.table"
+//   - c: columns to retrieve, e.g., ["id", "name"]
+//   - f: filter conditions, e.g., [["equal", "name", "John Doe"], ["in", "id", "1a", "1b"]]
+//   - l: additional clauses, e.g., "order by id desc limit 20 offset 0"
+//
+// Returns:
+//   - []map[string]interface{}: retrieved records
+//   - error: error information
 func (r *MySQLRepoImpl) Get(st string, c []string, f [][]string, l string) ([]map[string]interface{}, error) {
 	if len(c) == 0 {
 		var err error
@@ -213,13 +219,15 @@ func (r *MySQLRepoImpl) Get(st string, c []string, f [][]string, l string) ([]ma
 	return result, nil
 }
 
-// Update 根据条件修改指定表中的记录（MySQL）。
-// 参数：
-// - st：schema 和表，格式如 "schema.table"
-// - d：要更新的数据
-// - w：WHERE 条件，例如 "id='1a'"
-// 返回值：
-// - error：错误信息
+// Update modifies records in the specified table based on conditions (MySQL).
+//
+// Parameters:
+//   - st: schema and table, format like "schema.table"
+//   - d: data to be updated
+//   - w: WHERE condition, e.g., "id='1a'"
+//
+// Returns:
+//   - error: error information
 func (r *MySQLRepoImpl) Update(st string, d map[string]interface{}, w string) error {
 	columns, err := get_columns_mysql(r.db, st)
 	if err != nil {
@@ -248,12 +256,14 @@ func (r *MySQLRepoImpl) Update(st string, d map[string]interface{}, w string) er
 	return err
 }
 
-// Remove 根据条件删除指定表中的记录（MySQL）。
-// 参数：
-// - st：schema 和表，格式如 "schema.table"
-// - w：WHERE 条件，例如 "id='1a'"
-// 返回值：
-// - error：错误信息
+// Remove deletes records from the specified table based on conditions (MySQL).
+//
+// Parameters:
+//   - st: schema and table, format like "schema.table"
+//   - w: WHERE condition, e.g., "id='1a'"
+//
+// Returns:
+//   - error: error information
 func (r *MySQLRepoImpl) Remove(st string, w string) error {
 	q := fmt.Sprintf("DELETE FROM %s WHERE %s", st, w)
 	stmt, err := r.db.Prepare(q)
