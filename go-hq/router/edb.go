@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"ovaphlow/crate/hq/dbutil"
 	"ovaphlow/crate/hq/utility"
+	"strings"
 )
 
 func LoadEDBUtilRouter(mux *http.ServeMux, prefix string, service *dbutil.ApplicationServiceImpl) {
@@ -93,6 +94,7 @@ func LoadEDBUtilRouter(mux *http.ServeMux, prefix string, service *dbutil.Applic
 		last := r.URL.Query().Get("l")
 		filter := r.URL.Query().Get("f")
 		f, err := utility.ConvertQueryStringToDefaultFilter(filter)
+		c := r.URL.Query().Get("c")
 		if err != nil {
 			log.Println(err.Error())
 			w.WriteHeader(http.StatusBadRequest)
@@ -101,7 +103,7 @@ func LoadEDBUtilRouter(mux *http.ServeMux, prefix string, service *dbutil.Applic
 			return
 		}
 
-		result, err := service.GetMany(st, f, last)
+		result, err := service.GetMany(st, strings.Split(c, ","), f, last)
 		if err != nil {
 			log.Println(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)

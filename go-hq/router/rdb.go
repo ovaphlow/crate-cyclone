@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"ovaphlow/crate/hq/dbutil"
 	"ovaphlow/crate/hq/utility"
+	"strings"
 )
 
 // LoadSharedRouter 加载路由
@@ -80,6 +81,7 @@ func LoadRDBUtilRouter(mux *http.ServeMux, prefix string, service *dbutil.Applic
 		st := r.PathValue("st")
 		last := r.URL.Query().Get("l")
 		filter := r.URL.Query().Get("f")
+		c := r.URL.Query().Get("c")
 		f, err := utility.ConvertQueryStringToDefaultFilter(filter)
 		if err != nil {
 			log.Println(err.Error())
@@ -89,7 +91,7 @@ func LoadRDBUtilRouter(mux *http.ServeMux, prefix string, service *dbutil.Applic
 			return
 		}
 
-		result, err := service.GetMany(st, f, last)
+		result, err := service.GetMany(st, strings.Split(c, ","), f, last)
 		if err != nil {
 			log.Println(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)

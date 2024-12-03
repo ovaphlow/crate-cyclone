@@ -69,8 +69,8 @@ func (s *ApplicationServiceImpl) Create(st string, d map[string]interface{}) err
 // 返回值:
 //   - []map[string]interface{}: 应用服务数据列表。
 //   - error: 如果获取失败，返回相应的错误。
-func (s *ApplicationServiceImpl) GetMany(st string, f [][]string, l string) ([]map[string]interface{}, error) {
-	result, err := s.repo.Get(st, nil, f, l)
+func (s *ApplicationServiceImpl) GetMany(st string, c []string, f [][]string, l string) ([]map[string]interface{}, error) {
+	result, err := s.repo.Get(st, c, f, l)
 	if err != nil {
 		return nil, err
 	}
