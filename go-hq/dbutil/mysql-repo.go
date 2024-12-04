@@ -101,6 +101,7 @@ func (r *MySQLRepoImpl) Get(st string, c []string, f [][]string, l string) ([]ma
 		var err error
 		c, err = get_columns_mysql(r.db, st)
 		if err != nil {
+			log.Println(err.Error())
 			return nil, err
 		}
 	}

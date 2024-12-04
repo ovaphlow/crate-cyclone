@@ -81,7 +81,13 @@ func LoadRDBUtilRouter(mux *http.ServeMux, prefix string, service *dbutil.Applic
 		st := r.PathValue("st")
 		last := r.URL.Query().Get("l")
 		filter := r.URL.Query().Get("f")
-		c := r.URL.Query().Get("c")
+		columns := r.URL.Query().Get("c")
+		var c []string
+		if columns == "" {
+			c = []string{}
+		} else {
+			c = strings.Split(columns, ",")
+		}
 		f, err := utility.ConvertQueryStringToDefaultFilter(filter)
 		if err != nil {
 			log.Println(err.Error())
@@ -91,7 +97,7 @@ func LoadRDBUtilRouter(mux *http.ServeMux, prefix string, service *dbutil.Applic
 			return
 		}
 
-		result, err := service.GetMany(st, strings.Split(c, ","), f, last)
+		result, err := service.GetMany(st, c, f, last)
 		if err != nil {
 			log.Println(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
