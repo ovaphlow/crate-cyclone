@@ -45,7 +45,8 @@ func init() {
 		database := os.Getenv("MYSQL_DATABASE")
 		utility.InitMySQL(user, password, host, port, database)
 	} else {
-		log.Fatal("未设置数据库类型 DATABASE_TYPE")
+		log.Println("未设置有效的数据库类型 DATABASE_TYPE (postgres/mysql)")
+		log.Println("不初始化 RDB 连接")
 	}
 
 	sqlite := os.Getenv("SQLITE_ENABLED")
