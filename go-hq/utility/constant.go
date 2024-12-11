@@ -34,7 +34,8 @@ func CreateHTTPResponseRFC9457(title string, status int, r *http.Request) map[st
 // 返回:
 //   - ([]string, error): 解析后的过滤条件或解析失败时的错误。
 func parseFilterConditions(filter []string) ([][]string, error) {
-	if filter[0] == "equal" {
+	switch filter[0] {
+	case "equal", "eq":
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
 			return nil, err
@@ -48,7 +49,7 @@ func parseFilterConditions(filter []string) ([][]string, error) {
 			result = append(result, []string{"equal", filter[2+i], filter[3+i]})
 		}
 		return result, nil
-	} else if filter[0] == "not-equal" {
+	case "not-equal", "ne":
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
 			return nil, err
@@ -62,14 +63,14 @@ func parseFilterConditions(filter []string) ([][]string, error) {
 			result = append(result, []string{"not-equal", filter[2+i], filter[3+i]})
 		}
 		return result, nil
-	} else if filter[0] == "in" {
+	case "in":
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
 			return nil, err
 		}
 		v := filter[2 : 2+c]
 		return [][]string{append([]string{"in"}, v...)}, nil
-	} else if filter[0] == "like" {
+	case "like", "lk":
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
 			return nil, err
@@ -83,7 +84,7 @@ func parseFilterConditions(filter []string) ([][]string, error) {
 			result = append(result, []string{"like", filter[2+i], filter[3+i]})
 		}
 		return result, nil
-	} else if filter[0] == "greater-equal" {
+	case "greater-equal", "ge":
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
 			return nil, err
@@ -97,7 +98,7 @@ func parseFilterConditions(filter []string) ([][]string, error) {
 			result = append(result, []string{"greater-equal", filter[2+i], filter[3+i]})
 		}
 		return result, nil
-	} else if filter[0] == "less-equal" {
+	case "less-equal", "le":
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
 			return nil, err
@@ -111,7 +112,7 @@ func parseFilterConditions(filter []string) ([][]string, error) {
 			result = append(result, []string{"less-equal", filter[2+i], filter[3+i]})
 		}
 		return result, nil
-	} else if filter[0] == "greater" {
+	case "greater", "gt":
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
 			return nil, err
@@ -125,7 +126,7 @@ func parseFilterConditions(filter []string) ([][]string, error) {
 			result = append(result, []string{"greater", filter[2+i], filter[3+i]})
 		}
 		return result, nil
-	} else if filter[0] == "less" {
+	case "less", "lt":
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
 			return nil, err
@@ -139,14 +140,14 @@ func parseFilterConditions(filter []string) ([][]string, error) {
 			result = append(result, []string{"less", filter[2+i], filter[3+i]})
 		}
 		return result, nil
-	} else if filter[0] == "array-contain" {
+	case "array-contain", "act":
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
 			return nil, err
 		}
 		v := filter[2 : 2+c]
 		return [][]string{append([]string{"json-array-contains"}, v...)}, nil
-	} else if filter[0] == "object-contain" {
+	case "object-contain", "oct":
 		c, err := strconv.Atoi(filter[1])
 		if err != nil {
 			return nil, err
