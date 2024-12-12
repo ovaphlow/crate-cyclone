@@ -24,7 +24,7 @@ func InitSQLite() {
 		log.Fatal(errors.New("环境变量未设置 SQLite"))
 	}
 
-	SQLite, err = sql.Open("sqlite3", dsn)
+	SQLite, err = sql.Open("sqlite3", "file:"+dsn+"?mode=memory&cache=shared")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,4 +35,23 @@ func InitSQLite() {
 	}
 
 	log.Println("连接数据库成功 SQLite")
+
+	// Defer the call to save the in-memory database to disk on program exit
+	defer SaveSQLiteToDisk(dsn)
+}
+
+// SaveSQLiteToDisk writes the in-memory SQLite database to the original file
+func SaveSQLiteToDisk(dsn string) {
+	diskDB, err := sql.Open("sqlite3", dsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer diskDB.Close()
+
+	_, err = SQLite.Exec("VACUUM INTO ?", dsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("内存数据库已写入磁盘 SQLite")
 }
