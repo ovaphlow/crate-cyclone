@@ -39,9 +39,17 @@ func InitSQLite() {
 
 // PersistSQLite writes the in-memory SQLite database to the original file
 func PersistSQLite(dsn string) {
+	backupDsn := dsn + ".backup"
+	// Delete the existing backup file if it exists
+	if _, err := os.Stat(backupDsn); err == nil {
+		err = os.Remove(backupDsn)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	// Rename the existing file if it exists
 	if _, err := os.Stat(dsn); err == nil {
-		backupDsn := dsn + ".backup"
 		err = os.Rename(dsn, backupDsn)
 		if err != nil {
 			log.Fatal(err)
