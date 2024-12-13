@@ -7,12 +7,14 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"os/signal"
 	"ovaphlow/crate/hq/dbutil"
 	"ovaphlow/crate/hq/middleware"
 	"ovaphlow/crate/hq/router"
 	"ovaphlow/crate/hq/utility"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -140,6 +142,40 @@ func main() {
 		edbRepo := dbutil.NewSQLiteRepo(utility.SQLite)
 		edbService := dbutil.NewApplicationService(edbRepo)
 		router.LoadEDBUtilRouter(mux, "/cyclone-api", edbService)
+	}
+
+	// Ensure SQLite database is saved to disk on program exit
+	sqlite := os.Getenv("SQLITE_ENABLED")
+	if sqlite == "true" {
+		dsn := os.Getenv("SQLITE_DATABASE")
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+		go func() {
+			<-c
+			utility.PersistSQLite(dsn)
+			os.Exit(0)
+		}()
+
+		// Periodically persist SQLite database to disk at specific times
+		go func() {
+			for {
+				now := time.Now()
+				next := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, 0, 0, now.Location())
+				if now.Hour() >= 20 {
+					next = next.Add(4 * time.Hour)
+				} else if now.Hour() >= 16 {
+					next = next.Add(4 * time.Hour)
+				} else if now.Hour() >= 12 {
+					next = next.Add(4 * time.Hour)
+				} else if now.Hour() >= 8 {
+					next = next.Add(4 * time.Hour)
+				} else {
+					next = next.Add(8 * time.Hour)
+				}
+				time.Sleep(time.Until(next))
+				utility.PersistSQLite(dsn)
+			}
+		}()
 	}
 
 	// Get port number and start HTTP server

@@ -35,13 +35,19 @@ func InitSQLite() {
 	}
 
 	log.Println("连接数据库成功 SQLite")
-
-	// Defer the call to save the in-memory database to disk on program exit
-	defer SaveSQLiteToDisk(dsn)
 }
 
-// SaveSQLiteToDisk writes the in-memory SQLite database to the original file
-func SaveSQLiteToDisk(dsn string) {
+// PersistSQLite writes the in-memory SQLite database to the original file
+func PersistSQLite(dsn string) {
+	// Rename the existing file if it exists
+	if _, err := os.Stat(dsn); err == nil {
+		backupDsn := dsn + ".backup"
+		err = os.Rename(dsn, backupDsn)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	diskDB, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		log.Fatal(err)
