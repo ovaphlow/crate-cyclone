@@ -67,5 +67,5 @@ func PersistSQLite(dsn string) {
 		log.Fatal(err)
 	}
 
-	log.Println("内存数据库已写入磁盘 SQLite")
+	log.Println("已持久化数据 SQLite")
 }
