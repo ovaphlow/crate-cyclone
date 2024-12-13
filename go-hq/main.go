@@ -160,17 +160,17 @@ func main() {
 		go func() {
 			for {
 				now := time.Now()
-				next := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, 0, 0, now.Location())
+				var next time.Time
 				if now.Hour() >= 20 {
-					next = next.Add(4 * time.Hour)
+					next = time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
 				} else if now.Hour() >= 16 {
-					next = next.Add(4 * time.Hour)
+					next = time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, now.Location())
 				} else if now.Hour() >= 12 {
-					next = next.Add(4 * time.Hour)
+					next = time.Date(now.Year(), now.Month(), now.Day(), 16, 0, 0, 0, now.Location())
 				} else if now.Hour() >= 8 {
-					next = next.Add(4 * time.Hour)
+					next = time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, now.Location())
 				} else {
-					next = next.Add(8 * time.Hour)
+					next = time.Date(now.Year(), now.Month(), now.Day(), 8, 0, 0, 0, now.Location())
 				}
 				time.Sleep(time.Until(next))
 				utility.PersistSQLite(dsn)
