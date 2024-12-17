@@ -28,9 +28,9 @@ func get_columns_sqlite(db *sql.DB, sat string) ([]string, error) {
 		var name string
 		var dtype string
 		var notnull int
-		var dft string
+		var dflt sql.NullString // 修改这里
 		var pk int
-		err = rows.Scan(&cid, &name, &dtype, &notnull, &dft, &pk)
+		err = rows.Scan(&cid, &name, &dtype, &notnull, &dflt, &pk)
 		if err != nil {
 			return nil, err
 		}

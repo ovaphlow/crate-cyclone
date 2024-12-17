@@ -81,13 +81,6 @@ func LoadRDBUtilRouter(mux *http.ServeMux, prefix string, service *dbutil.Applic
 		st := r.PathValue("st")
 		last := r.URL.Query().Get("l")
 		filter := r.URL.Query().Get("f")
-		columns := r.URL.Query().Get("c")
-		var c []string
-		if columns == "" {
-			c = []string{}
-		} else {
-			c = strings.Split(columns, ",")
-		}
 		f, err := utility.ConvertQueryStringToDefaultFilter(filter)
 		if err != nil {
 			log.Println(err.Error())
@@ -95,6 +88,13 @@ func LoadRDBUtilRouter(mux *http.ServeMux, prefix string, service *dbutil.Applic
 			response := utility.CreateHTTPResponseRFC9457("无效的查询参数", http.StatusBadRequest, r)
 			json.NewEncoder(w).Encode(response)
 			return
+		}
+		columns := r.URL.Query().Get("c")
+		var c []string
+		if columns == "" {
+			c = []string{}
+		} else {
+			c = strings.Split(columns, ",")
 		}
 
 		result, err := service.GetMany(st, c, f, last)

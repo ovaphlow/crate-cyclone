@@ -94,7 +94,6 @@ func LoadEDBUtilRouter(mux *http.ServeMux, prefix string, service *dbutil.Applic
 		last := r.URL.Query().Get("l")
 		filter := r.URL.Query().Get("f")
 		f, err := utility.ConvertQueryStringToDefaultFilter(filter)
-		c := r.URL.Query().Get("c")
 		if err != nil {
 			log.Println(err.Error())
 			w.WriteHeader(http.StatusBadRequest)
@@ -102,8 +101,15 @@ func LoadEDBUtilRouter(mux *http.ServeMux, prefix string, service *dbutil.Applic
 			json.NewEncoder(w).Encode(response)
 			return
 		}
+		columns := r.URL.Query().Get("c")
+		var c []string
+		if columns == "" {
+			c = []string{}
+		} else {
+			c = strings.Split(columns, ",")
+		}
 
-		result, err := service.GetMany(st, strings.Split(c, ","), f, last)
+		result, err := service.GetMany(st, c, f, last)
 		if err != nil {
 			log.Println(err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
