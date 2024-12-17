@@ -142,40 +142,6 @@ func main() {
 		router.LoadEDBUtilRouter(mux, "/cyclone-api", edbService)
 	}
 
-	// Ensure SQLite database is saved to disk on program exit
-	// sqlite := os.Getenv("SQLITE_ENABLED")
-	// if sqlite == "true" {
-	// 	dsn := os.Getenv("SQLITE_DATABASE")
-	// 	c := make(chan os.Signal, 1)
-	// 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	// 	go func() {
-	// 		<-c
-	// 		utility.PersistSQLite(dsn)
-	// 		os.Exit(0)
-	// 	}()
-
-	// 	// Periodically persist SQLite database to disk at specific times
-	// 	go func() {
-	// 		for {
-	// 			now := time.Now()
-	// 			var next time.Time
-	// 			if now.Hour() >= 20 {
-	// 				next = time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
-	// 			} else if now.Hour() >= 16 {
-	// 				next = time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, now.Location())
-	// 			} else if now.Hour() >= 12 {
-	// 				next = time.Date(now.Year(), now.Month(), now.Day(), 16, 0, 0, 0, now.Location())
-	// 			} else if now.Hour() >= 8 {
-	// 				next = time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, now.Location())
-	// 			} else {
-	// 				next = time.Date(now.Year(), now.Month(), now.Day(), 8, 0, 0, 0, now.Location())
-	// 			}
-	// 			time.Sleep(time.Until(next))
-	// 			utility.PersistSQLite(dsn)
-	// 		}
-	// 	}()
-	// }
-
 	// Get port number and start HTTP server
 	port := os.Getenv("PORT")
 	if port == "" {

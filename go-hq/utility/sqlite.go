@@ -44,36 +44,3 @@ func InitSQLite() {
 
 	log.Println("连接数据库成功 SQLite")
 }
-
-// PersistSQLite writes the in-memory SQLite database to the original file
-func PersistSQLite(dsn string) {
-	backupDsn := dsn + ".backup"
-	// Delete the existing backup file if it exists
-	if _, err := os.Stat(backupDsn); err == nil {
-		err = os.Remove(backupDsn)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	// Rename the existing file if it exists
-	if _, err := os.Stat(dsn); err == nil {
-		err = os.Rename(dsn, backupDsn)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	diskDB, err := sql.Open("sqlite3", dsn)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer diskDB.Close()
-
-	_, err = SQLite.Exec("VACUUM INTO ?", dsn)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Println("已持久化数据 SQLite")
-}
