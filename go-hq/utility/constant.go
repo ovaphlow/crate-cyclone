@@ -152,8 +152,15 @@ func parseFilterConditions(filter []string) ([][]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		v := filter[2 : 2+c]
-		return [][]string{append([]string{"json-object-contains"}, v...)}, nil
+		if c%2 != 0 {
+			return nil, fmt.Errorf("参数数量错误")
+		}
+
+		var result [][]string
+		for i := 0; i < c; i += 3 {
+			result = append(result, []string{"json-object-contains", filter[2+i], filter[3+i], filter[4+i]})
+		}
+		return result, nil
 	}
 	return nil, nil
 }

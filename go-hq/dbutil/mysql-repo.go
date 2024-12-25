@@ -152,11 +152,11 @@ func (r *MySQLRepoImpl) Get(st string, c []string, f [][]string, l string) ([]ma
 		case "less-equal":
 			whereClauses = append(whereClauses, fmt.Sprintf("%s <= ?", field))
 			params = append(params, condition[2])
-		case "jsonb-array-contains":
+		case "json-array-contains":
 			whereClauses = append(whereClauses, fmt.Sprintf("JSON_CONTAINS(%s, '\"%s\"')", field, condition[2]))
-		case "jsonb-object-contains":
+		case "json-object-contains":
 			whereClauses = append(whereClauses, fmt.Sprintf("JSON_CONTAINS(%s, ?, '$')", field))
-			params = append(params, fmt.Sprintf(`{"%s": "%s"}`, condition[1], condition[2]))
+			params = append(params, fmt.Sprintf(`{"%s": "%s"}`, condition[2], condition[3]))
 		}
 	}
 

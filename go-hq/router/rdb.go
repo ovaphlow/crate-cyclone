@@ -89,6 +89,7 @@ func LoadRDBUtilRouter(mux *http.ServeMux, prefix string, service *dbutil.Applic
 			json.NewEncoder(w).Encode(response)
 			return
 		}
+		log.Println(f)
 		columns := r.URL.Query().Get("c")
 		var c []string
 		if columns == "" {
