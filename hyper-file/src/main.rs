@@ -65,7 +65,7 @@ async fn router(
     req: hyper::Request<hyper::body::Incoming>,
 ) -> Result<hyper::Response<http_body_util::Full<hyper::body::Bytes>>, std::convert::Infallible> {
     match (req.method(), req.uri().path()) {
-        (&hyper::Method::GET, "/crate-file-api/get") => get_file(req).await,
+        (&hyper::Method::GET, "/crate-file-api/download") => get_file(req).await,
 
         _ => {
             let mut not_found = hyper::Response::new(http_body_util::Full::new(
