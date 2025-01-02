@@ -152,7 +152,7 @@ func parseFilterConditions(filter []string) ([][]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		if c%2 != 0 {
+		if c%3 != 0 {
 			return nil, fmt.Errorf("参数数量错误")
 		}
 
