@@ -133,13 +133,13 @@ func main() {
 
 	// Create application service and load shared routes
 	appService := dbutil.NewApplicationService(rdbRepo)
-	router.LoadRDBUtilRouter(mux, "/cyclone-api", appService)
+	router.LoadRDBUtilRouter(mux, "/crate-data-api", appService)
 
 	edb := os.Getenv("SQLITE_ENABLED")
 	if edb == "true" {
 		edbRepo := dbutil.NewSQLiteRepo(utility.SQLite)
 		edbService := dbutil.NewApplicationService(edbRepo)
-		router.LoadEDBUtilRouter(mux, "/cyclone-api", edbService)
+		router.LoadEDBUtilRouter(mux, "/crate-data-api", edbService)
 	}
 
 	// Get port number and start HTTP server
