@@ -1,6 +1,6 @@
 package main
 
-// Import necessary packages
+// 导入必要的包
 import (
 	"log"
 	"net/http"
@@ -19,51 +19,53 @@ import (
 )
 
 func init() {
-	// Load environment variables file
+	// 加载环境变量文件
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	// Initialize structured logging
+	// 初始化结构化日志
 	utility.InitSlog()
 
-	// Initialize the corresponding database based on environment variables
-	database_type := os.Getenv("DATABASE_TYPE")
-	if database_type == "posgres" {
+	// 初始化 PostgreSQL 数据库
+	postgres_enabled := os.Getenv("POSTGRES_ENABLED")
+	if postgres_enabled == "true" || postgres_enabled == "1" {
 		user := os.Getenv("POSTGRES_USER")
 		password := os.Getenv("POSTGRES_PASSWORD")
 		host := os.Getenv("POSTGRES_HOST")
 		port := os.Getenv("POSTGRES_PORT")
 		database := os.Getenv("POSTGRES_DATABASE")
 		utility.InitPostgres(user, password, host, port, database)
-	} else if database_type == "mysql" {
+	}
+
+	// 初始化 MySQL 数据库
+	mysql_enabled := os.Getenv("MYSQL_ENABLED")
+	if mysql_enabled == "true" || mysql_enabled == "1" {
 		user := os.Getenv("MYSQL_USER")
 		password := os.Getenv("MYSQL_PASSWORD")
 		host := os.Getenv("MYSQL_HOST")
 		port := os.Getenv("MYSQL_PORT")
 		database := os.Getenv("MYSQL_DATABASE")
 		utility.InitMySQL(user, password, host, port, database)
-	} else {
-		log.Println("未设置有效的数据库类型 DATABASE_TYPE (postgres/mysql)")
-		log.Println("不初始化 RDB 连接")
 	}
 
-	sqlite := os.Getenv("SQLITE_ENABLED")
-	if sqlite == "true" {
+	// 初始化 SQLite 数据库
+	sqlite_enabled := os.Getenv("SQLITE_ENABLED")
+	if sqlite_enabled == "true" || sqlite_enabled == "1" {
 		utility.InitSQLite()
 	}
 }
 
 type Middleware func(http.Handler) http.Handler
 
-// applyMiddlewares applies the given middlewares to an HTTP handler.
-// Parameters:
-//   - h: The initial http.Handler to which the subsequent middlewares will be applied.
-//   - middlewares: Variadic parameter list of Middleware functions to be applied in sequence.
+// applyMiddlewares 应用给定的中间件到 HTTP 处理器。
+// 参数:
+//   - h: 初始的 http.Handler，后续的中间件将应用于此。
+//   - middlewares: 可变参数列表，包含依次应用的中间件函数。
 //
-// Returns:
-//   - An http.Handler with all middlewares applied.
+// 返回值:
+//   - 一个应用了所有中间件的 http.Handler。
 func applyMiddlewares(h http.Handler, middlewares ...Middleware) http.Handler {
 	for _, middleware := range middlewares {
 		h = middleware(h)
@@ -72,27 +74,27 @@ func applyMiddlewares(h http.Handler, middlewares ...Middleware) http.Handler {
 }
 
 func main() {
-	// Create a new ServeMux
+	// 创建一个新的 ServeMux
 	mux := http.NewServeMux()
 
-	// Define Ping route, returns "pong"
+	// 定义 Ping 路由，返回 "pong"
 	mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("pong"))
 	})
 
-	// Apply multiple middlewares to mux
+	// 应用多个中间件到 mux
 	handler := applyMiddlewares(mux, middleware.APIVersionMiddleware, middleware.CORSMiddleware, middleware.SecurityHeadersMiddleware)
 	log.Println("中间件已加载")
 
-	// Set up static file service, path is /html
+	// 设置静态文件服务，路径为 /html
 	fs := http.FileServer(http.Dir("./html"))
 	mux.Handle("/html/", http.StripPrefix("/html", fs))
 	log.Println("静态文件服务已加载至 /html")
 
-	// Register service routes
+	// 注册服务路由
 	router.RegisterServiceRouter(mux)
 
-	// Set up dynamic proxy route
+	// 设置动态代理路由
 	mux.HandleFunc("/proxy/", func(w http.ResponseWriter, r *http.Request) {
 		target := determinTarget(r)
 		remote, err := url.Parse(target)
@@ -110,7 +112,7 @@ func main() {
 		proxy.ServeHTTP(w, r)
 	})
 
-	// Set up periodic health check, executed every 15 seconds
+	// 设置定期健康检查，每 15 秒执行一次
 	sec := 15
 	duration := time.Duration(sec) * time.Second
 	ticker := time.NewTicker(duration)
@@ -120,30 +122,31 @@ func main() {
 		}
 	}()
 
-	// Initialize database connection and create shared resource repository
-	databaseType := os.Getenv("DATABASE_TYPE")
-	var rdbRepo dbutil.Repo
-	if databaseType == "postgres" {
-		rdbRepo = dbutil.NewPostgresRepo(utility.Postgres)
-	} else if databaseType == "mysql" {
-		rdbRepo = dbutil.NewMySQLRepo(utility.MySQL)
-	} else {
-		log.Fatal("Unsupported DATABASE_TYPE")
+	// 加载 PostgreSQL 路由
+	postgres_enabled := os.Getenv("POSTGRES_ENABLED")
+	if postgres_enabled == "true" || postgres_enabled == "1" {
+		postgresRepo := dbutil.NewPostgresRepo(utility.Postgres)
+		postgresService := dbutil.NewApplicationService(postgresRepo)
+		router.LoadPostgresRouter(mux, "/crate-api-data", postgresService)
 	}
 
-	// Create application service and load shared routes
-	appService := dbutil.NewApplicationService(rdbRepo)
-	router.LoadRDBUtilRouter(mux, "/crate-api-data", appService)
-	router.LoadMySQLRouter(mux, "/crate-api-data", appService)
-
-	edb := os.Getenv("SQLITE_ENABLED")
-	if edb == "true" {
-		edbRepo := dbutil.NewSQLiteRepo(utility.SQLite)
-		edbService := dbutil.NewApplicationService(edbRepo)
-		router.LoadEDBUtilRouter(mux, "/crate-data-api", edbService)
+	// 加载 MySQL 路由
+	mysql_enabled := os.Getenv("MYSQL_ENABLED")
+	if mysql_enabled == "true" || mysql_enabled == "1" {
+		mysqlRepo := dbutil.NewMySQLRepo(utility.MySQL)
+		mysqlService := dbutil.NewApplicationService(mysqlRepo)
+		router.LoadMySQLRouter(mux, "/crate-api-data", mysqlService)
 	}
 
-	// Get port number and start HTTP server
+	// 加载 SQLite 路由
+	sqlite_enabled := os.Getenv("SQLITE_ENABLED")
+	if sqlite_enabled == "true" || sqlite_enabled == "1" {
+		sqliteRepo := dbutil.NewSQLiteRepo(utility.SQLite)
+		sqliteService := dbutil.NewApplicationService(sqliteRepo)
+		router.LoadSQLiteRouter(mux, "/crate-api-data", sqliteService)
+	}
+
+	// 获取端口号并启动 HTTP 服务器
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8421"
@@ -152,7 +155,7 @@ func main() {
 	log.Fatal(http.ListenAndServe("0.0.0.0:"+port, handler))
 }
 
-// determineTarget decides the target service address based on the request
+// determineTarget 根据请求决定目标服务地址
 func determinTarget(r *http.Request) string {
 	for _, service := range router.ServiceList {
 		if strings.HasPrefix(r.URL.Path, "/proxy/"+service.Name) {

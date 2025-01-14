@@ -9,36 +9,35 @@ import (
 	"strings"
 )
 
-func LoadMySQLRouter(mux *http.ServeMux, prefix string, service *dbutil.ApplicationServiceImpl) {
+func LoadSQLiteRouter(mux *http.ServeMux, prefix string, service *dbutil.ApplicationServiceImpl) {
 	route := &RouteMySQL{service: service}
 
-	mux.HandleFunc("DELETE "+prefix+"/mysql/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("DELETE "+prefix+"/sqlite/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
 		route.delete(w, r)
 	})
 
-	mux.HandleFunc("PUT "+prefix+"/mysql/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("PUT "+prefix+"/edb-util/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
 		route.put(w, r)
 	})
 
-	mux.HandleFunc("GET "+prefix+"/mysql/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET "+prefix+"/edb-util/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
 		route.get(w, r)
 	})
 
-	mux.HandleFunc("GET "+prefix+"/mysql/{st}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET "+prefix+"/edb-util/{st}", func(w http.ResponseWriter, r *http.Request) {
 		route.getMany(w, r)
 	})
 
-	mux.HandleFunc("POST "+prefix+"/mysql/{st}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST "+prefix+"/edb-util/{st}", func(w http.ResponseWriter, r *http.Request) {
 		route.post(w, r)
 	})
-
 }
 
-type RouteMySQL struct {
+type RouteSQLite struct {
 	service *dbutil.ApplicationServiceImpl
 }
 
-func (route *RouteMySQL) delete(w http.ResponseWriter, r *http.Request) {
+func (route RouteSQLite) delete(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	st := r.PathValue("st")
@@ -58,7 +57,7 @@ func (route *RouteMySQL) delete(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func (route *RouteMySQL) put(w http.ResponseWriter, r *http.Request) {
+func (route RouteSQLite) put(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	st := r.PathValue("st")
@@ -93,25 +92,7 @@ func (route *RouteMySQL) put(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func (route *RouteMySQL) get(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	st := r.PathValue("st")
-	id := r.PathValue("id")
-
-	result, err := route.service.Get(st, [][]string{{"id='" + id + "'"}}, "")
-	if err != nil {
-		log.Println(err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
-		response := utility.CreateHTTPResponseRFC9457("内部服务器错误", http.StatusInternalServerError, r)
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	json.NewEncoder(w).Encode(result)
-}
-
-func (route *RouteMySQL) getMany(w http.ResponseWriter, r *http.Request) {
+func (route RouteSQLite) get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	st := r.PathValue("st")
@@ -125,7 +106,33 @@ func (route *RouteMySQL) getMany(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(response)
 		return
 	}
-	log.Println(f)
+
+	result, err := route.service.Get(st, f, last)
+	if err != nil {
+		log.Println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		response := utility.CreateHTTPResponseRFC9457("内部服务器错误", http.StatusInternalServerError, r)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	json.NewEncoder(w).Encode(result)
+}
+
+func (route RouteSQLite) getMany(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	st := r.PathValue("st")
+	last := r.URL.Query().Get("l")
+	filter := r.URL.Query().Get("f")
+	f, err := utility.ConvertQueryStringToDefaultFilter(filter)
+	if err != nil {
+		log.Println(err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		response := utility.CreateHTTPResponseRFC9457("无效的查询参数", http.StatusBadRequest, r)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
 	columns := r.URL.Query().Get("c")
 	var c []string
 	if columns == "" {
@@ -146,7 +153,7 @@ func (route *RouteMySQL) getMany(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
-func (route *RouteMySQL) post(w http.ResponseWriter, r *http.Request) {
+func (route RouteSQLite) post(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	st := r.PathValue("st")
 

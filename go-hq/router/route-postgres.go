@@ -9,36 +9,36 @@ import (
 	"strings"
 )
 
-func LoadMySQLRouter(mux *http.ServeMux, prefix string, service *dbutil.ApplicationServiceImpl) {
+func LoadPostgresRouter(mux *http.ServeMux, prefix string, service *dbutil.ApplicationServiceImpl) {
 	route := &RouteMySQL{service: service}
 
-	mux.HandleFunc("DELETE "+prefix+"/mysql/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("DELETE "+prefix+"/postgres/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
 		route.delete(w, r)
 	})
 
-	mux.HandleFunc("PUT "+prefix+"/mysql/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("PUT "+prefix+"/postgres/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
 		route.put(w, r)
 	})
 
-	mux.HandleFunc("GET "+prefix+"/mysql/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET "+prefix+"/postgres/{st}/{id}", func(w http.ResponseWriter, r *http.Request) {
 		route.get(w, r)
 	})
 
-	mux.HandleFunc("GET "+prefix+"/mysql/{st}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET "+prefix+"/postgres/{st}", func(w http.ResponseWriter, r *http.Request) {
 		route.getMany(w, r)
 	})
 
-	mux.HandleFunc("POST "+prefix+"/mysql/{st}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST "+prefix+"/postgres/{st}", func(w http.ResponseWriter, r *http.Request) {
 		route.post(w, r)
 	})
 
 }
 
-type RouteMySQL struct {
+type RoutePostgres struct {
 	service *dbutil.ApplicationServiceImpl
 }
 
-func (route *RouteMySQL) delete(w http.ResponseWriter, r *http.Request) {
+func (route *RoutePostgres) delete(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	st := r.PathValue("st")
@@ -58,7 +58,7 @@ func (route *RouteMySQL) delete(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func (route *RouteMySQL) put(w http.ResponseWriter, r *http.Request) {
+func (route *RoutePostgres) put(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	st := r.PathValue("st")
@@ -93,7 +93,7 @@ func (route *RouteMySQL) put(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func (route *RouteMySQL) get(w http.ResponseWriter, r *http.Request) {
+func (route *RoutePostgres) get(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	st := r.PathValue("st")
@@ -111,7 +111,7 @@ func (route *RouteMySQL) get(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
-func (route *RouteMySQL) getMany(w http.ResponseWriter, r *http.Request) {
+func (route *RoutePostgres) getMany(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	st := r.PathValue("st")
@@ -146,7 +146,7 @@ func (route *RouteMySQL) getMany(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
-func (route *RouteMySQL) post(w http.ResponseWriter, r *http.Request) {
+func (route *RoutePostgres) post(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	st := r.PathValue("st")
 
