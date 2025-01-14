@@ -51,3 +51,7 @@ make run
 ## 设置库路径
 
 请确保 `libcrate_shared.so` 文件存放在 `./lib` 目录下。
+
+## 在 Windows 系统上使用 Makefile
+
+在 Windows 系统上使用 Makefile，您需要安装一个兼容的工具，例如 Git Bash 或 Cygwin。安装完成后，您可以在这些终端中运行 `make` 命令。
