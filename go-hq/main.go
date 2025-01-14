@@ -133,7 +133,8 @@ func main() {
 
 	// Create application service and load shared routes
 	appService := dbutil.NewApplicationService(rdbRepo)
-	router.LoadRDBUtilRouter(mux, "/crate-data-api", appService)
+	router.LoadRDBUtilRouter(mux, "/crate-api-data", appService)
+	router.LoadMySQLRouter(mux, "/crate-api-data", appService)
 
 	edb := os.Getenv("SQLITE_ENABLED")
 	if edb == "true" {
