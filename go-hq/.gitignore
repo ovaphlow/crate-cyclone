@@ -1,2 +1,5 @@
 .env
 database
+lib
+target
+*.so
